@@ -1,0 +1,1345 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f6b4f">
+<title>PiliçTakip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: saha aracı — üstte deneme şeridi, ortada tek görünüm, telefonda altta sekme çubuğu; masaüstünde sekmeler üstte */
+:root{
+  --bg:#f3f5f2; --surface:#ffffff; --sunk:#e9ede7; --line:#d3d9d0; --fg:#18211b; --muted:#56635a;
+  --accent:#1f6b4f; --accent-fg:#ffffff; --accent-soft:#dcebe3;
+  --at:#b07a00; --at-soft:#f7ecd0; --rs:#2a62b8; --rs-soft:#dde7f7;
+  --ok:#2e7d3e; --warn:#a35f00; --bad:#b3261e; --warn-soft:#fbeed9; --bad-soft:#f9e1df;
+  --body:"Noto Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"Noto Sans Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111613; --surface:#18201b; --sunk:#202a23; --line:#2f3b33; --fg:#e6ece7; --muted:#a2b0a6;
+  --accent:#5fbf95; --accent-fg:#0c1510; --accent-soft:#1e3328;
+  --at:#e7b23a; --at-soft:#3a2f14; --rs:#7aa7f0; --rs-soft:#1c2a42;
+  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111613; --surface:#18201b; --sunk:#202a23; --line:#2f3b33; --fg:#e6ece7; --muted:#a2b0a6;
+  --accent:#5fbf95; --accent-fg:#0c1510; --accent-soft:#1e3328;
+  --at:#e7b23a; --at-soft:#3a2f14; --rs:#7aa7f0; --rs-soft:#1c2a42;
+  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:88px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+h1,h2,h3{font-family:var(--body);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:0;line-height:1.25}
+h2{font-size:1.4rem} h3{font-size:1.1rem}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num,td.n{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.wrap{max-width:1080px;margin:0 auto}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;gap:12px;padding-block:10px;border-bottom:1px solid var(--line)}
+.brand{font-weight:700;font-size:1.2rem;letter-spacing:-.01em}
+.brand b{color:var(--accent);font-weight:700}
+.trial{flex:1;min-width:0;color:var(--muted);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.chip.ok i{background:var(--ok)} .chip.warn i{background:var(--warn)} .chip.bad i{background:var(--bad)}
+.banner{margin-top:10px;padding:10px 12px;border-radius:var(--r);background:var(--warn-soft);color:var(--fg);font-size:.92rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabs button{background:none;border:0;padding:8px 2px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--muted)}
+.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
+.tabs.ro{grid-template-columns:repeat(2,1fr)}
+@media (min-width:860px){
+  body{padding-bottom:24px}
+  .tabs{position:static;display:flex;gap:4px;background:none;border:0;padding:0;margin-top:10px}
+  .tabs button{flex-direction:row;gap:7px;font-size:.94rem;padding:8px 12px;border-radius:var(--r)}
+  .tabs button svg{width:18px;height:18px}
+  .tabs button[aria-current="page"]{background:var(--accent-soft)}
+}
+
+main{padding-block:16px;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card > h3{margin-bottom:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.stack{display:flex;flex-direction:column;gap:12px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:9px 14px;font-weight:600;font-size:.95rem;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.ghost{border-color:transparent;background:none;color:var(--accent);padding-inline:6px}
+.btn.danger{color:var(--bad);border-color:var(--bad-soft)}
+.btn.big{padding:16px 20px;font-size:1.08rem;width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+label.f{display:flex;flex-direction:column;justify-content:flex-end;gap:5px;font-size:.86rem;color:var(--muted);min-width:0}
+label.f span.u{font-size:.8rem;color:var(--muted)}
+input.i,select.i,textarea.i{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:9px 10px;width:100%;color:var(--fg);font-size:1rem;min-height:42px}
+input.i:focus,select.i:focus,textarea.i:focus{border-color:var(--accent);outline:none}
+.fgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(145px,1fr))}
+.calc{font-size:.92rem;padding:9px 10px;border-radius:6px;background:var(--sunk);color:var(--fg);font-variant-numeric:tabular-nums;align-self:end}
+details.sec{border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+details.sec > summary{list-style:none;cursor:pointer;padding:13px 16px;display:flex;align-items:center;gap:10px;font-size:1.05rem;font-weight:700}
+details.sec > summary::-webkit-details-marker{display:none}
+details.sec > summary::after{content:"+";margin-left:auto;font-size:1.2rem;color:var(--muted)}
+details.sec[open] > summary::after{content:"−"}
+details.sec .body{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
+.sub{font-size:.92rem;font-weight:700;color:var(--fg);margin-top:6px;padding-top:10px;border-top:1px solid var(--line)}
+.sub:first-child{border-top:0;padding-top:0;margin-top:0}
+.ref{font-size:.8rem;color:var(--muted)}
+
+.tag{display:inline-flex;align-items:center;font-family:var(--mono);font-weight:600;font-size:.95rem;padding:1px 8px;border-radius:5px;border:2px solid var(--muted);white-space:nowrap}
+.tag.AT{border-color:var(--at);background:var(--at-soft)} .tag.RS{border-color:var(--rs);background:var(--rs-soft)}
+.tag.xl{align-self:flex-start;font-size:1.9rem;font-weight:700;padding:2px 14px;border-width:3px;border-radius:8px}
+.pill{display:inline-block;font-size:.78rem;padding:2px 9px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.pill.ok{background:var(--accent-soft);color:var(--accent)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table.t{border-collapse:collapse;width:100%;font-size:.9rem}
+table.t th,table.t td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+table.t th{font-weight:600;color:var(--muted);font-size:.82rem;background:var(--sunk);position:sticky;top:0}
+table.t td.n,table.t th.n{text-align:right}
+table.t tr.click{cursor:pointer} table.t tr.click:hover td{background:var(--accent-soft)}
+table.t input.i,table.t select.i{padding:5px 7px;font-size:.92rem;min-width:70px;min-height:34px}
+table.fe input.i{min-width:110px}
+
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.kpi{padding:10px 12px;border-radius:var(--r);background:var(--sunk)}
+.kpi .v{font-size:1.45rem;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:.8rem;color:var(--muted)}
+
+.strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
+.shot{flex:0 0 auto;width:132px;display:flex;flex-direction:column;gap:4px;font-size:.8rem;color:var(--muted)}
+.shot .ph{width:132px;height:100px;border-radius:6px;background:var(--sunk);display:grid;place-items:center;overflow:hidden;border:1px solid var(--line)}
+.shot .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.shot b{color:var(--fg);font-variant-numeric:tabular-nums}
+
+svg.chart text{fill:var(--muted);font-family:var(--body);font-size:12px}
+svg.chart .grid line{stroke:var(--line)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.84rem;color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:0;border-top:2px solid;vertical-align:middle;margin-right:5px}
+
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:.92rem}
+.pens{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.pen{border:1px solid var(--line);border-radius:var(--r);padding:12px;background:var(--surface);text-align:left;display:flex;flex-direction:column;gap:3px}
+.pen.AT{border-top:4px solid var(--at)} .pen.RS{border-top:4px solid var(--rs)}
+.pen .pn{font-size:1.1rem;font-weight:700}
+.pen[aria-pressed="true"]{outline:2px solid var(--accent)}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:20;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.92rem;max-width:calc(100% - 32px);box-shadow:0 4px 16px rgba(0,0,0,.25)}
+@media (min-width:860px){.toast{bottom:24px}}
+.modal{position:fixed;inset:0;z-index:30;background:rgba(10,16,12,.55);display:grid;place-items:center;padding:16px}
+.modal .box{background:var(--surface);border-radius:12px;padding:18px;max-width:480px;width:100%;display:flex;flex-direction:column;gap:12px;max-height:90vh;overflow:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--surface);padding:8px 12px;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.daybar{display:flex;gap:6px;flex-wrap:wrap}
+.daybar button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 10px;font-variant-numeric:tabular-nums;font-size:.9rem}
+.daybar button.has{border-color:var(--accent);color:var(--accent)}
+.daybar button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.photoin{display:flex;gap:10px;flex-wrap:wrap}
+.photoin .ph{width:150px;height:112px;border-radius:6px;border:1px dashed var(--line);display:grid;place-items:center;overflow:hidden;background:var(--sunk);font-size:.82rem;color:var(--muted);text-align:center;padding:4px}
+.photoin .ph img{width:100%;height:100%;object-fit:cover}
+@media (prefers-reduced-motion:no-preference){.btn,.tabs button{transition:background .15s,border-color .15s,color .15s}}
+
+/* bağımsız sayfa temeli */
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+.top .btn{padding:5px 10px;font-size:.85rem}
+/* giriş ekranı */
+.gate{min-height:70vh;display:grid;place-items:center;padding-block:24px}
+.gate-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
+.gate-card .logo{font-size:2rem;font-weight:700;letter-spacing:-.02em}
+.gate-card .logo b{color:var(--accent)}
+.gate-card .btn.big{min-height:56px}
+/* ziyaretçi zaman çizelgesi */
+.vlist{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.vcard{display:flex;flex-direction:column;gap:6px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px}
+.vcard .ph{aspect-ratio:4/3;max-width:100%;border-radius:6px;background:var(--sunk);overflow:hidden;display:grid;place-items:center;color:var(--muted);font-size:.82rem}
+.vcard .ph img{width:100%;height:100%;object-fit:cover}
+.timeline{display:flex;flex-direction:column;gap:18px;position:relative}
+.wk{display:grid;gap:12px;grid-template-columns:1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+@media (min-width:700px){.wk{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:start}}
+.wk-photo{aspect-ratio:4/3;max-width:100%;border-radius:8px;overflow:hidden;background:var(--sunk);display:grid;place-items:center;color:var(--muted)}
+.wk-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.wk-side{width:110px;aspect-ratio:4/3;border-radius:6px;overflow:hidden;background:var(--sunk)}
+.wk-side img{width:100%;height:100%;object-fit:cover}
+.wk-day{font-size:1.25rem;font-weight:700}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.95rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
+.gain{color:var(--ok)}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  .wk,.vcard{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+}
+</style>
+</head>
+<body>
+
+<header class="top wrap" lang="tr">
+  <div class="brand">Piliç<b>Takip</b></div>
+  <div class="trial" id="trialName">Bireysel kanatlı deneme kaydı</div>
+  <span class="chip" id="sync"><i></i><span>Bağlanıyor</span></span>
+  <button class="btn ghost" id="exitBtn" hidden>Çıkış</button>
+</header>
+<div class="wrap" id="bannerBox" lang="tr"></div>
+<nav class="tabs wrap" id="tabs" aria-label="Bölümler" lang="tr">
+  <button data-v="okut"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>Okut</button>
+  <button data-v="bireyler"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Bireyler</button>
+  <button data-v="kumes"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg>Kümes</button>
+  <button data-v="et"><svg viewBox="0 0 24 24"><path d="M6 14c-2-4 1-9 6-9 4 0 7 3 7 7 0 5-5 8-9 7"/><path d="M6 14l-2 4 3 1 1 2 3-2"/></svg>Et kalitesi</button>
+  <button data-v="rna"><svg viewBox="0 0 24 24"><path d="M7 3c0 6 10 6 10 12s-10 6-10 6M17 3c0 6-10 6-10 12s10 6 10 6"/><path d="M8 7h8M8 17h8"/></svg>RNA-seq</button>
+  <button data-v="ayar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2.1-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2.1 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2.1 1.2L10 21h4l.5-2.6a7 7 0 0 0 2.1-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>Ayarlar</button>
+</nav>
+<main class="wrap" id="main" lang="tr"></main>
+<input type="file" id="fileScan" accept="image/*" capture="environment" hidden>
+<input type="file" id="filePhoto" accept="image/*" capture="environment" hidden>
+<input type="file" id="fileAny" hidden>
+<div id="toastBox" lang="tr"></div>
+<div id="modalBox" lang="tr"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+"use strict";
+document.documentElement.lang="tr";
+/* ============ KURULUM: Supabase bilgileri (KURULUM.md'ye bak) ============
+   Şifre bu dosyada YOKTUR; Supabase'de kullanıcı oluşturulurken belirlenir. */
+const SUPABASE_URL="";        // örnek: https://abcdefgh.supabase.co
+const SUPABASE_ANON_KEY="";   // Project Settings → API → anon public
+const OWNER_EMAIL="";         // Supabase'de oluşturduğun kullanıcının e-postası
+const SITE_URL=location.protocol.startsWith("http")?location.origin+location.pathname:"";
+const APP_URL=SITE_URL;
+const SB_READY=!!(SUPABASE_URL&&SUPABASE_ANON_KEY&&OWNER_EMAIL&&window.supabase);
+
+/* ============ Varsayılan ölçüm tanımları (literatüre dayalı; Ayarlar'dan değiştirilebilir) ============ */
+const DAYS_DEFAULT=[0,7,14,21,28,35,42];
+const WEEKLY=[
+  {k:"shankLen",l:"İncik uzunluğu",u:"mm",ref:"Dennis ve ark. 2008"},
+  {k:"shankDia",l:"İncik çapı",u:"mm",ref:"Halka boyu ve bacak sağlığı (Pirbright)"},
+  {k:"backLen",l:"Sırt uzunluğu",u:"cm",ref:"Küçüktopçu ve ark. 2025"},
+  {k:"backWid",l:"Sırt genişliği",u:"cm",ref:"Küçüktopçu ve ark. 2025"},
+  {k:"breastWid",l:"Göğüs genişliği",u:"cm",ref:"Morfometri"},
+  {k:"keelLen",l:"Göğüs kemiği (keel) uzunluğu",u:"cm",ref:"Morfometri"},
+  {k:"gait",l:"Yürüme skoru",opts:[0,1,2,3,4,5],ref:"Kestin ve ark. 1992 (0 normal – 5 yürüyemez)"},
+  {k:"fpd",l:"Ayak tabanı lezyonu",opts:[0,1,2,3,4],ref:"Welfare Quality 2009 (0–4)"},
+  {k:"hock",l:"Diz (hock) yanığı",opts:[0,1,2,3,4],ref:"Welfare Quality 2009 (0–4)"},
+  {k:"feather",l:"Tüy kirliliği",opts:[0,1,2,3],ref:"Welfare Quality 2009 (0–3)"},
+  {k:"temp",l:"Kloak sıcaklığı",u:"°C",ref:"Isı stresi göstergesi"},
+  {k:"ltl",l:"Yatma gecikmesi (LTL)",u:"sn",ref:"Weeks ve ark. 2002, bacak gücü"}
+];
+const WEEKLY_ON=["shankLen","shankDia","backLen","backWid","gait","fpd","hock"];
+const SLAUGHTER=[
+  {k:"fastedW",l:"Kesim öncesi canlı ağırlık (aç)",u:"g"},
+  {k:"hotCarc",l:"Sıcak karkas",u:"g"},
+  {k:"coldCarc",l:"Soğuk karkas (24 sa)",u:"g",off:1},
+  {k:"pmaj",l:"Pectoralis major",u:"g"},
+  {k:"pmin",l:"Pectoralis minor",u:"g"},
+  {k:"thighR",l:"But, sağ (thigh + drumstick)",u:"g"},
+  {k:"thighL",l:"But, sol",u:"g"},
+  {k:"wings",l:"Kanatlar",u:"g",off:1},
+  {k:"abdFat",l:"Abdominal yağ",u:"g"},
+  {k:"heart",l:"Kalp",u:"g",off:1},
+  {k:"liver",l:"Karaciğer",u:"g",off:1},
+  {k:"gizzard",l:"Taşlık",u:"g",off:1},
+  {k:"bursa",l:"Bursa Fabricius",u:"g",off:1},
+  {k:"spleen",l:"Dalak",u:"g",off:1},
+  {k:"tibiaLen",l:"Tibia uzunluğu",u:"mm",off:1},
+  {k:"tibiaW",l:"Tibia ağırlığı",u:"g",off:1}
+];
+const MEAT=[
+  {g:"pH",k:"ph15",l:"pH 15. dk (pHi)",ref:"P. major kranial bölge"},
+  {g:"pH",k:"phu",l:"pHu (24. sa)",ref:"P. major kranial bölge"},
+  {g:"pH",k:"phT",l:"Kas sıcaklığı",u:"°C",off:1},
+  {g:"Renk (CIE L*a*b*)",k:"L",l:"L* (açıklık)",ref:"24. sa, kemik tarafı yüzey; 3 okuma ortalaması"},
+  {g:"Renk (CIE L*a*b*)",k:"a",l:"a* (kırmızılık)"},
+  {g:"Renk (CIE L*a*b*)",k:"b",l:"b* (sarılık)"},
+  {g:"Damlama kaybı (drip loss)",k:"dm1",l:"m1, başlangıç",u:"g",ref:"Honikel 1998; 4 °C, 24 sa askı"},
+  {g:"Damlama kaybı (drip loss)",k:"dm2",l:"m2, 24 sa sonra",u:"g"},
+  {g:"Pişirme kaybı (cooking loss)",k:"cm1",l:"m1, pişirme öncesi",u:"g",off:1,ref:"Tez önerisinden çıkarıldı; isteğe bağlı"},
+  {g:"Pişirme kaybı (cooking loss)",k:"cm2",l:"m2, pişirme sonrası",u:"g",off:1},
+  {g:"Tekstür",k:"wbsf",l:"Warner–Bratzler kesme kuvveti",u:"N",off:1,ref:"Pişmiş örnek"},
+  {g:"Tekstür",k:"tpaH",l:"TPA sertlik",u:"N",off:1},
+  {g:"Tekstür",k:"tpaS",l:"TPA esneklik",off:1},
+  {g:"Tekstür",k:"tpaC",l:"TPA kohezyon",off:1},
+  {g:"Su tutma kapasitesi",k:"whc",l:"Su tutma kapasitesi",u:"%",off:1,ref:"Pres veya santrifüj yöntemi"},
+  {g:"Göğüs miyopatileri",k:"ws",l:"Beyaz çizgilenme (WS)",opts:[0,0.5,1,1.5,2,2.5,3],ref:"Kuttappan ve ark. 2012"},
+  {g:"Göğüs miyopatileri",k:"wb",l:"Odunsu göğüs (WB)",opts:[0,1,2,3],ref:"Tijare ve ark. 2016"},
+  {g:"Göğüs miyopatileri",k:"sm",l:"Spagetti et (SM)",opts:[0,1,2],ref:"Aviagen skor kartları"},
+  {g:"Kimyasal bileşim",k:"moist",l:"Nem",u:"%",off:1,ref:"AOAC"},
+  {g:"Kimyasal bileşim",k:"prot",l:"Ham protein",u:"%",off:1},
+  {g:"Kimyasal bileşim",k:"fat",l:"Ham yağ",u:"%",off:1},
+  {g:"Kimyasal bileşim",k:"ash",l:"Ham kül",u:"%",off:1}
+];
+const RNAF=[
+  {k:"code",l:"Örnek kodu",t:"text"},{k:"freezeMin",l:"Kesimden dondurmaya",u:"dk"},{k:"tube",l:"Tüp / kutu-raf konumu",t:"text"},
+  {k:"conc",l:"RNA",u:"ng/µL"},{k:"r280",l:"A260/280"},{k:"r230",l:"A260/230"},{k:"rin",l:"RIN / RQN"},{k:"qubit",l:"Qubit",u:"ng/µL"},
+  {k:"lib",l:"Kütüphane kimliği",t:"text"},{k:"raw",l:"Ham okuma",u:"milyon"},{k:"clean",l:"Temiz okuma",u:"milyon"},{k:"map",l:"Hizalanma",u:"%"},{k:"sra",l:"SRA erişim no",t:"text"}
+];
+const GROUPS={weekly:"Haftalık ölçümler",slaughter:"Kesim ve karkas",meat:"Et kalitesi",rna:"RNA-seq örnek bilgileri"};
+const CAND_DEFAULT="IGF1, AKT1, MTOR, MYOD1, MYOG, MSTN, PPARGC1A, PRKAA2, ACSL1, ADIPOQ, PRKAG2, HIF1A, VEGFA, NFE2L2, HMOX1, COL1A1, COL3A1, FN1, MMP2, MMP9, TGFB1";
+const CONFIG_DEFAULT={
+  trial:"Anadolu-T × Ross 308 · P. major RNA-seq",
+  startDate:"",
+  geno:{AT:"Anadolu-T",RS:"Ross 308"},
+  ctrl:"AT",
+  days:DAYS_DEFAULT,
+  penCount:6,
+  bandOpts:"Uygun, Gevşetildi, Değiştirildi, Kayıp / yeniden takıldı",
+  targets:{RS:{0:42,7:202,14:570,21:1116,28:1783,35:2521,42:3278},AT:{42:2790}},
+  qrMode:"url",
+  url:APP_URL,
+  refGene:"GAPDH",
+  cand:CAND_DEFAULT
+};
+
+/* ============ yardımcılar ============ */
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=v=>{if(v===null||v===undefined||v==="")return null;const n=parseFloat(String(v).replace(",","."));return isFinite(n)?n:null};
+const fmt=(v,d=0)=>v===null||v===undefined||!isFinite(v)?"—":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const mean=a=>{a=a.filter(x=>x!=null&&isFinite(x));return a.length?a.reduce((s,x)=>s+x,0)/a.length:null};
+const sd=a=>{a=a.filter(x=>x!=null&&isFinite(x));if(a.length<2)return null;const m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1))};
+const median=a=>{a=a.filter(x=>x!=null).sort((x,y)=>x-y);if(!a.length)return null;const h=a.length>>1;return a.length%2?a[h]:(a[h-1]+a[h])/2};
+const isObj=o=>o&&typeof o==="object"&&!Array.isArray(o);
+function deepMerge(t,s){for(const k in s){if(isObj(s[k])){if(!isObj(t[k]))t[k]={};deepMerge(t[k],s[k])}else t[k]=s[k]}return t}
+const clone=o=>JSON.parse(JSON.stringify(o??{}));
+const todayISO=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36);
+const up=s=>String(s||"").toLocaleUpperCase("tr-TR");
+const normId=s=>up(String(s||"").trim()).replace(/\s+/g,"");
+function ls(k,v){try{if(v===undefined){const s=localStorage.getItem(k);return s?JSON.parse(s):null}localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+function toast(msg,ms=2800){const b=$("#toastBox");b.innerHTML=`<div class="toast" role="status">${esc(msg)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>b.innerHTML="",ms)}
+function loadScript(src){return new Promise((res,rej)=>{const old=document.querySelector(`script[src="${src}"]`);if(old&&old.dataset.ok){res();return}const s=old||document.createElement("script");s.src=src;s.onload=()=>{s.dataset.ok=1;res()};s.onerror=()=>rej(new Error("Kütüphane yüklenemedi; internet bağlantısını kontrol et"));if(!old)document.head.appendChild(s)})}
+const LIB={jsqr:"https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js",xlsx:"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",zip:"https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js",pdf:"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"};
+function dlg(html,onOk,okLabel="Tamam",danger=false){
+  const m=$("#modalBox");
+  m.innerHTML=`<div class="modal"><div class="box">${html}<div class="row" style="justify-content:flex-end"><button class="btn" id="mCancel">Vazgeç</button>${onOk?`<button class="btn ${danger?"danger":"primary"}" id="mOk">${esc(okLabel)}</button>`:""}</div></div></div>`;
+  $("#mCancel").onclick=()=>m.innerHTML="";
+  if(onOk)$("#mOk").onclick=async()=>{$("#mOk").disabled=true;let r;try{r=await onOk(m)}catch(e){toast(e.message||"İşlem tamamlanamadı");r=false}if(r!==false)m.innerHTML="";else{const b=$("#mOk");if(b)b.disabled=false}};
+}
+
+/* ============ IndexedDB (yerel fotoğraf + bekleyenler) ============ */
+const IDB={db:null,
+  open(){return new Promise(r=>{try{const q=indexedDB.open("pilictakip",1);q.onupgradeneeded=()=>{q.result.createObjectStore("blobs")};q.onsuccess=()=>{this.db=q.result;r(true)};q.onerror=()=>r(false)}catch(e){r(false)}})},
+  put(k,v){return new Promise(r=>{try{if(!this.db)return r(false);const tx=this.db.transaction("blobs","readwrite");tx.objectStore("blobs").put(v,k);tx.oncomplete=()=>r(true);tx.onerror=()=>r(false)}catch(e){r(false)}})},
+  get(k){return new Promise(r=>{try{if(!this.db)return r(null);const q=this.db.transaction("blobs").objectStore("blobs").get(k);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null)}catch(e){r(null)}})},
+  del(k){return new Promise(r=>{try{if(!this.db)return r(false);const tx=this.db.transaction("blobs","readwrite");tx.objectStore("blobs").delete(k);tx.oncomplete=()=>r(true)}catch(e){r(false)}})}
+};
+
+/* ============ Depo katmanı: paylaşımlı veritabanı / bu cihaz / örnek ============ */
+const ST={mode:"init",birds:{},pens:{},config:clone(CONFIG_DEFAULT),rna:{},canWrite:true,view:"okut",cur:null,curDay:null,curSec:null,penSel:1,filter:{g:"",p:"",q:"",s:""},pending:ls("pt_queue")||[],pendingRender:false,loaded:false,want:null,role:null,session:null};
+ST.canWrite=false;
+let sb=null,DL=null;
+const BUCKET="fotograflar";
+
+const Store={
+  async init(){
+    await IDB.open();
+    if(SB_READY){
+      sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+      ST.mode="db";
+      try{const {data}=await sb.auth.getSession();ST.session=data.session||null}catch(e){}
+      await this.load();
+      document.addEventListener("visibilitychange",()=>{if(!document.hidden)this.load()});
+      setInterval(()=>{if(!document.hidden)this.load()},60000);
+    }else{
+      ST.mode="local";const d=ls("pt_local");if(d){ST.birds=d.birds||{};ST.pens=d.pens||{};ST.config=deepMerge(clone(CONFIG_DEFAULT),d.config||{});ST.rna=d.rna||{}}ST.loaded=true;
+    }
+    syncChip();tryWanted();render();
+    setInterval(()=>this.flush(),20000);
+    window.addEventListener("online",()=>{syncChip();this.flush()});
+    window.addEventListener("offline",()=>syncChip());
+  },
+  /* tüm kayıtları okur; telefonda bekleyen yazımlar korunur */
+  async load(){
+    if(!sb||ST.mode==="demo")return;
+    let rows=[];
+    for(let from=0;;from+=1000){
+      const {data,error}=await sb.from("kayitlar").select("path,data").range(from,from+999);
+      if(error){syncChip("bad","Bağlantı yok");return}
+      rows=rows.concat(data||[]);if(!data||data.length<1000)break;
+    }
+    const birds={},pens={};let cfg={},rna={};
+    rows.forEach(r=>{const [c,id]=r.path.split("/");if(c==="birds")birds[id]=r.data;else if(c==="pens")pens[id]=r.data;else if(r.path==="config/main")cfg=r.data;else if(r.path==="rna/deg")rna=r.data});
+    for(const p of ST.pending){const [c,id]=p.split("/");if(c==="birds"&&ST.birds[id])birds[id]=ST.birds[id];if(c==="pens"&&ST.pens[id])pens[id]=ST.pens[id]}
+    ST.birds=birds;ST.pens=pens;ST.config=deepMerge(clone(CONFIG_DEFAULT),cfg||{});ST.rna=rna||{};
+    ST.loaded=true;syncChip();tryWanted();softRender();
+  },
+  saveLocal(){if(ST.mode==="local")ls("pt_local",{birds:ST.birds,pens:ST.pens,config:ST.config,rna:ST.rna})},
+  target(path){const [col,id]=path.split("/");if(col==="birds")return [ST.birds,id];if(col==="pens")return [ST.pens,id];return [null,null]},
+  full(path){const [t,id]=this.target(path);return t?t[id]:path==="config/main"?ST.config:ST.rna},
+  async write(path){
+    const {error}=await sb.from("kayitlar").upsert({path,data:clone(this.full(path)),updated_at:new Date().toISOString()});
+    if(error)throw error;
+  },
+  async patch(path,patch,whole=false){
+    if(!ST.canWrite){toast("Kayıt girmek için kullanıcı olarak giriş yap");return false}
+    const [t,id]=this.target(path);
+    if(t){if(whole||!t[id])t[id]={};deepMerge(t[id],clone(patch))}
+    else if(path==="config/main")deepMerge(ST.config,clone(patch));
+    else if(path==="rna/deg")deepMerge(ST.rna,clone(patch));
+    if(ST.mode==="demo")return true;
+    if(ST.mode==="local"){this.saveLocal();return true}
+    try{await this.write(path);return true}
+    catch(e){
+      if(e&&(e.code==="42501"||/row-level security|JWT|permission/i.test(e.message||""))){toast("Kayıt izni yok; yeniden giriş yap",5000);return false}
+      this.enqueue(path);syncChip();toast("Bağlantı yok: kayıt telefonda bekletiliyor");return true;
+    }
+  },
+  async remove(path){
+    const [t,id]=this.target(path);if(t)delete t[id];
+    if(ST.mode==="local"){this.saveLocal();return true}
+    if(ST.mode==="demo")return true;
+    const {error}=await sb.from("kayitlar").delete().eq("path",path);
+    if(error){toast("Silinemedi: "+error.message);return false}return true;
+  },
+  async bulkSet(col,obj){
+    const t=col==="birds"?ST.birds:ST.pens;Object.assign(t,clone(obj));
+    if(ST.mode!=="db"){this.saveLocal();return}
+    const ids=Object.keys(obj);
+    for(let i=0;i<ids.length;i+=100){
+      const chunk=ids.slice(i,i+100).map(id=>({path:col+"/"+id,data:clone(obj[id]),updated_at:new Date().toISOString()}));
+      const {error}=await sb.from("kayitlar").upsert(chunk);
+      if(error)ids.slice(i,i+100).forEach(id=>this.enqueue(col+"/"+id));
+      syncChip("warn",`Kaydediliyor ${Math.min(i+100,ids.length)}/${ids.length}`);
+    }
+    syncChip();
+  },
+  enqueue(path){if(!ST.pending.includes(path))ST.pending.push(path);ls("pt_queue",ST.pending)},
+  async flush(){
+    if(ST.mode!=="db"||!ST.canWrite||this.busy)return;this.busy=true;
+    try{
+      if(ST.pending.length){const left=[];for(const path of ST.pending){if(!this.full(path))continue;try{await this.write(path)}catch(e){left.push(path)}}ST.pending=left;ls("pt_queue",left)}
+      for(const b of Object.values(ST.birds))for(const [dk,w] of Object.entries(b.weeks||{}))for(const slot of ["top","side"]){
+        const ref=w[slot];if(typeof ref!=="string"||!ref.startsWith("pend:"))continue;
+        const blob=await IDB.get(ref);if(!blob)continue;
+        try{const r=await this.putFile(blob,`${b.id}/${dk}_${slot}_${uid()}.jpg`,"image/jpeg");await this.patch("birds/"+b.id,{weeks:{[dk]:{[slot]:r}}});IDB.del(ref)}catch(e){}
+      }
+    }finally{this.busy=false;syncChip()}
+  },
+  async putFile(blob,path,type){
+    const {error}=await sb.storage.from(BUCKET).upload(path,blob,{contentType:type,upsert:false});
+    if(error)throw error;return "sb:"+path;
+  },
+  async putPhoto(blob,hint){
+    if(ST.mode==="db"){
+      try{return await this.putFile(blob,`${hint||"genel"}/${uid()}.jpg`,"image/jpeg")}
+      catch(e){const k="pend:"+uid();await IDB.put(k,blob);toast("Fotoğraf telefonda bekletiliyor; bağlantı gelince yüklenecek");return k}
+    }
+    if(ST.mode==="demo")return "mem:"+URL.createObjectURL(blob);
+    const k="local:"+uid();await IDB.put(k,blob);return k;
+  }
+};
+async function login(pw){
+  if(!sb){ST.role="owner";ST.canWrite=true;return true}
+  const {data,error}=await sb.auth.signInWithPassword({email:OWNER_EMAIL,password:pw});
+  if(error||!data.session)return false;
+  ST.session=data.session;ST.role="owner";ST.canWrite=true;Store.flush();return true;
+}
+async function logout(){
+  if(sb&&ST.role==="owner"){try{await sb.auth.signOut()}catch(e){}ST.session=null}
+  ST.role=null;ST.canWrite=false;ST.cur=null;ST.view="okut";render();window.scrollTo(0,0);
+}
+function syncChip(kind,text){
+  const c=$("#sync");
+  if(!kind){
+    if(ST.mode==="demo"){kind="warn";text="Örnek veri"}
+    else if(ST.mode==="local"){kind="warn";text="Yalnızca bu cihaz"}
+    else if(ST.mode==="init"){kind="";text="Bağlanıyor"}
+    else if(ST.pending.length){kind="warn";text=`${ST.pending.length} kayıt bekliyor`}
+    else if(!navigator.onLine){kind="bad";text="Çevrimdışı"}
+    else if(!ST.loaded){kind="";text="Yükleniyor"}
+    else{kind="ok";text=ST.canWrite?"Eşitlendi":"Görüntüleme"}
+  }
+  c.className="chip "+kind;c.querySelector("span").textContent=text;
+  $("#trialName").textContent=ST.config.trial||"";
+}
+
+/* ============ alan tanımları (Ayarlar'da düzenlenir) ============ */
+function defaultFields(grp){
+  if(grp==="weekly")return WEEKLY.map(m=>({...m,on:WEEKLY_ON.includes(m.k)}));
+  if(grp==="slaughter")return SLAUGHTER.map(({off,...m})=>({...m,on:!off}));
+  if(grp==="meat")return MEAT.map(({off,...m})=>({...m,on:!off}));
+  return RNAF.map(m=>({...m,on:true}));
+}
+const FL=grp=>{const f=ST.config.fields?.[grp];return Array.isArray(f)&&f.length?f:defaultFields(grp)};
+const FON=grp=>FL(grp).filter(f=>f.on!==false);
+const ftype=f=>f.opts&&f.opts.length?"score":f.t==="text"?"text":"num";
+const bandOpts=()=>[""].concat(String(ST.config.bandOpts||"").split(",").map(s=>s.trim()).filter(Boolean));
+const flabel=f=>f.l+(f.u?` (${f.u})`:"");
+
+/* ============ fotoğraf ve QR ============ */
+const urlCache={};
+function photoSrc(ref){
+  if(!ref)return "";
+  if(ref.startsWith("demo:"))return demoPhoto(ref);
+  if(ref.startsWith("mem:"))return ref.slice(4);
+  if(ref.startsWith("sb:"))return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${ref.slice(3).split("/").map(encodeURIComponent).join("/")}`;
+  if(ref.startsWith("local:")||ref.startsWith("pend:")){
+    if(urlCache[ref])return urlCache[ref];
+    IDB.get(ref).then(b=>{if(!b)return;urlCache[ref]=URL.createObjectURL(b);document.querySelectorAll(`img[data-ref="${CSS.escape(ref)}"]`).forEach(i=>i.src=urlCache[ref])});
+    return "";
+  }
+  return "";
+}
+const imgTag=(ref,alt)=>ref?`<img data-ref="${esc(ref)}" src="${esc(photoSrc(ref))}" alt="${esc(alt)}" loading="lazy">`:"";
+function readImage(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file);const im=new Image();im.onload=()=>res(im);im.onerror=()=>rej(new Error("Görüntü okunamadı"));im.src=u})}
+async function compress(file,max=1600){
+  const im=await readImage(file);const s=Math.min(1,max/Math.max(im.width,im.height));
+  const c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+  c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.86));
+  return {blob,canvas:c};
+}
+async function decodeQR(canvas){
+  await loadScript(LIB.jsqr);
+  for(const sc of [1,0.6,1.6]){
+    const w=Math.round(Math.min(1400,canvas.width*sc)),h=Math.round(canvas.height*w/canvas.width);
+    const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(canvas,0,0,w,h);
+    const d=x.getImageData(0,0,w,h);const r=window.jsQR(d.data,w,h,{inversionAttempts:"attemptBoth"});
+    if(r&&r.data)return parseQR(r.data);
+  }
+  return null;
+}
+function parseQR(s){s=String(s).trim();const h=s.lastIndexOf("#");if(h>=0)s=s.slice(h+1);try{s=decodeURIComponent(s)}catch(e){}return normId(s)}
+function pickFile(input,accept){return new Promise(res=>{const el=$(input);if(accept)el.accept=accept;el.value="";el.onchange=()=>res(el.files[0]||null);el.click()})}
+function qrText(id){return ST.config.qrMode==="url"?(SITE_URL||ST.config.url||"").split("#")[0]+"#"+id:id}
+function qrObj(t){const q=qrcode(0,ST.config.qrMode==="url"?"M":"H");q.addData(t);q.make();return q}
+function qrSVG(t){const q=qrObj(t),n=q.getModuleCount();let p="";for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))p+=`M${c},${r}h1v1h-1z`;return `<svg viewBox="-4 -4 ${n+8} ${n+8}" width="100%" shape-rendering="crispEdges"><rect x="-4" y="-4" width="${n+8}" height="${n+8}" fill="#fff"/><path d="${p}" fill="#000"/></svg>`}
+
+/* ============ hesaplar ============ */
+const G=()=>ST.config.geno||CONFIG_DEFAULT.geno;
+const gname=g=>G()[g]||g||"";
+const days=()=>(ST.config.days&&ST.config.days.length?ST.config.days:DAYS_DEFAULT).map(Number).filter(x=>isFinite(x)).sort((a,b)=>a-b);
+const birdList=()=>Object.values(ST.birds).filter(b=>b&&b.id).sort((a,b)=>a.id.localeCompare(b.id,"tr"));
+const wOf=(b,d)=>num(b.weeks?.["d"+d]?.w);
+function alive(b,d){return !(b.status==="öldü"&&b.deathDay!=null&&num(b.deathDay)<=d)}
+function penBirds(p){return birdList().filter(b=>String(b.pen)===String(p))}
+function penGeno(p){const bs=penBirds(p);if(!bs.length)return ST.pens["B"+p]?.geno||"";const c={};bs.forEach(b=>c[b.geno]=(c[b.geno]||0)+1);return Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0]}
+function penIds(){const n=Number(ST.config.penCount)||6;const s=new Set();for(let i=1;i<=n;i++)s.add(i);birdList().forEach(b=>num(b.pen)&&s.add(Number(b.pen)));return [...s].sort((a,b)=>a-b)}
+function penStats(p){
+  const ds=days(),bs=penBirds(p),pen=ST.pens["B"+p]||{},out=[];
+  let cumFeed=0,cumDead=0,prevBio=null,bio0=null;
+  ds.forEach((d,i)=>{
+    const ws=bs.map(b=>wOf(b,d)).filter(x=>x!=null);
+    const bio=ws.length?ws.reduce((s,x)=>s+x,0):null;
+    if(i===0)bio0=bio;
+    const prev=i?ds[i-1]:null;
+    const deadBirds=bs.filter(b=>b.status==="öldü"&&num(b.deathDay)!=null&&num(b.deathDay)<=d&&(prev===null||num(b.deathDay)>prev));
+    const deadW=deadBirds.reduce((s,b)=>s+(num(b.deathW)||0),0);
+    const wk=pen.weeks?.["d"+d]||{};
+    const feed=num(wk.feed)!=null?(num(wk.feed)-(num(wk.left)||0))*1000:null;
+    let fcr=null,cfcr=null;
+    if(feed!=null)cumFeed+=feed;
+    cumDead+=deadW;
+    if(i>0&&feed!=null&&bio!=null&&prevBio!=null){const gain=bio-prevBio+deadW;if(gain>0)fcr=feed/gain}
+    if(i>0&&bio!=null&&bio0!=null&&cumFeed>0){const g=bio-bio0+cumDead;if(g>0)cfcr=cumFeed/g}
+    const m=mean(ws),s=sd(ws);
+    out.push({d,n:ws.length,alive:bs.filter(b=>alive(b,d)).length,mean:m,cv:m&&s?s/m*100:null,bio,feed,deadN:deadBirds.length,deadW,fcr,cfcr,wk});
+    if(bio!=null)prevBio=bio;
+  });
+  out.forEach((r,i)=>{if(i>0&&r.mean!=null&&out[i-1].mean!=null)r.adg=(r.mean-out[i-1].mean)/(r.d-out[i-1].d)});
+  return out;
+}
+function genoMeans(g,d){return mean(birdList().filter(b=>b.geno===g).map(b=>wOf(b,d)))}
+function expectedW(b,d){const pm=mean(penBirds(b.pen).filter(x=>x.id!==b.id).map(x=>wOf(x,d)));if(pm)return pm;return num(ST.config.targets?.[b.geno]?.[d])}
+function sCalc(s){
+  const f=num(s?.fastedW),h=num(s?.hotCarc),pM=num(s?.pmaj),pm=num(s?.pmin),tR=num(s?.thighR),tL=num(s?.thighL),af=num(s?.abdFat);
+  return {yield:f&&h?h/f*100:null,breast:h&&pM!=null?((pM||0)+(pm||0))/h*100:null,thigh:h&&tR!=null?((tR||0)+(tL||0))/h*100:null,fat:f&&af!=null?af/f*100:null};
+}
+function mCalc(m){const d1=num(m?.dm1),d2=num(m?.dm2),c1=num(m?.cm1),c2=num(m?.cm2);return {drip:d1&&d2!=null?(d1-d2)/d1*100:null,cook:c1&&c2!=null?(c1-c2)/c1*100:null}}
+const dayOfDate=()=>{const s=ST.config.startDate;if(!s)return null;return Math.round((new Date(todayISO())-new Date(s))/864e5)};
+function nearestDay(){const t=dayOfDate();const ds=days();if(t==null)return ds[0];return ds.reduce((a,b)=>Math.abs(b-t)<Math.abs(a-t)?b:a,ds[0])}
+const dateOfDay=d=>{const s=ST.config.startDate;if(!s)return "";const x=new Date(s);x.setDate(x.getDate()+d);return x.toISOString().slice(0,10)};
+const trDate=s=>s?String(s).split("-").reverse().join("."):"";
+
+/* ============ grafik ============ */
+function lineChart({series,w,h=240,yLabel="g",xs}){
+  if(!w){const mw=($("#main")?.clientWidth||680)-34;w=Math.max(300,Math.min(760,mw));h=w<500?210:250}
+  const pad={l:54,r:16,t:16,b:30};
+  const xsA=xs||days();const xmin=Math.min(...xsA),xmax=Math.max(...xsA);
+  let ymax=0;series.forEach(s=>s.pts.forEach(p=>{if(p[1]!=null)ymax=Math.max(ymax,p[1])}));
+  if(!ymax)ymax=100;
+  const step=niceStep(ymax/4);ymax=Math.ceil(ymax/step)*step;
+  const X=x=>pad.l+(x-xmin)/(xmax-xmin||1)*(w-pad.l-pad.r),Y=y=>h-pad.b-(y/ymax)*(h-pad.t-pad.b);
+  let g=`<g class="grid">`;for(let v=0;v<=ymax+1e-9;v+=step)g+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${pad.l-6}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`;
+  xsA.forEach(x=>g+=`<text x="${X(x)}" y="${h-9}" text-anchor="middle">${x}</text>`);
+  g+=`<text x="6" y="11" style="font-size:11px">${esc(yLabel)}</text></g>`;
+  let body="";
+  series.forEach(s=>{
+    const pts=s.pts.filter(p=>p[1]!=null);if(!pts.length)return;
+    const d=pts.map((p,i)=>(i?"L":"M")+X(p[0]).toFixed(1)+","+Y(p[1]).toFixed(1)).join("");
+    body+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.wd||2}" ${s.dash?`stroke-dasharray="${s.dash}"`:""}/>`;
+    if(s.dots||pts.length===1)pts.forEach((p,i)=>body+=`<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="${i===pts.length-1?4.5:3}" fill="${s.color}"><title>${p[0]}. gün: ${fmt(p[1])} ${yLabel}</title></circle>`);
+  });
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Büyüme eğrisi">${g}${body}</svg>`;
+}
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x||1)));const m=x/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p}
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ============ görünüm iskeleti ============ */
+function setView(v){ST.view=v;ST.cur=null;render();window.scrollTo(0,0)}
+const RO_TABS=["okut","bireyler"];
+function markTab(){$("#tabs").hidden=ST.role!=="owner";document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===ST.view&&!ST.cur?"page":"false"))}
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>setView(b.dataset.v));
+function busyInput(){const a=document.activeElement;return a&&$("#main").contains(a)&&/INPUT|SELECT|TEXTAREA/.test(a.tagName)}
+let rq=0;
+function softRender(){
+  if(rq)return;
+  rq=requestAnimationFrame(()=>{rq=0;if(busyInput()||$("#main [data-dirty='1']")){ST.pendingRender=true;return}render()});
+}
+document.addEventListener("focusout",()=>setTimeout(()=>{if(ST.pendingRender&&!busyInput()&&!$("#main [data-dirty='1']"))render()},80));
+document.addEventListener("input",e=>{const f=e.target.closest("[data-form]");if(f)f.dataset.dirty="1"});
+document.addEventListener("change",e=>{const f=e.target.closest("[data-form]");if(f)f.dataset.dirty="1"});
+function banner(){
+  const b=$("#bannerBox");let h="";
+  if(ST.mode==="demo")h=`<div class="banner"><b>Örnek veri gösteriliyor.</b> Bu veriler gerçek değildir ve hiçbir yere kaydedilmez.<button class="btn" id="exitDemo">Örnekten çık</button></div>`;
+  else if(ST.mode==="local"&&ST.role)h=`<div class="banner">Veritabanı bağlantısı kurulmadı (KURULUM.md). Kayıtlar yalnızca <b>bu cihazda</b> tutuluyor.</div>`;
+  b.innerHTML=h;const x=$("#exitDemo");if(x)x.onclick=exitDemo;
+}
+function render(){
+  ST.pendingRender=false;banner();syncChip();markTab();
+  const m=$("#main");const y=window.scrollY;
+  $("#exitBtn").hidden=!ST.role;$("#exitBtn").textContent=ST.role==="owner"?"Çıkış yap":"Giriş ekranı";
+  try{
+    if(!ST.role){m.innerHTML=viewGate();bindGate();return}
+    if(ST.role==="visitor"){if(ST.cur&&ST.birds[ST.cur]){m.innerHTML=viewVisitorBird(ST.birds[ST.cur]);bindVisitorBird()}else{ST.cur=null;m.innerHTML=viewVisitorList();bindVisitorList()}return}
+    if(ST.cur&&ST.birds[ST.cur]){m.innerHTML=viewBird(ST.birds[ST.cur]);bindBird()}
+    else{ST.cur=null;const v={okut:viewScan,bireyler:viewBirds,kumes:viewPens,et:viewMeat,rna:viewRna,ayar:viewSettings}[ST.view]||viewScan;m.innerHTML=v();(BIND[ST.view]||(()=>{}))()}
+  }catch(e){console.error(e);m.innerHTML=`<div class="card stack"><h3>Bu ekran açılamadı</h3><p class="small muted">${esc(e.message)}</p><div class="row"><button class="btn" id="errHome">Ana ekrana dön</button></div></div>`;const eh=$("#errHome");if(eh)eh.onclick=()=>setView("okut")}
+  markTab();window.scrollTo(0,y);
+}
+$("#exitBtn").onclick=logout;
+const BIND={};
+function openBird(id,sec){
+  id=normId(id);
+  if(!ST.birds[id]){if(!ST.loaded&&ST.mode!=="local"&&ST.mode!=="demo"){ST.want={id,sec};toast("Kayıtlar yükleniyor…");return true}toast(`${id||"Kimlik"} bu denemede yok`);return false}
+  if(ST.role==="visitor"){ST.cur=id;render();window.scrollTo(0,0);return true}
+  ST.cur=id;ST.curSec=sec||null;ST.curDay=ST.curDay??nearestDay();render();window.scrollTo(0,0);
+  if(sec)setTimeout(()=>{const el=document.getElementById("sec-"+sec);if(el){el.open=true;el.scrollIntoView({block:"start"})}},30);
+  return true;
+}
+function tryWanted(){if(!ST.want||!ST.loaded||!ST.role)return;const w=ST.want;ST.want=null;if(ST.birds[w.id])openBird(w.id,w.sec);else toast(`${w.id} bu denemede yok`)}
+function readHash(){const h=(location.hash||"").slice(1);if(!h)return;const id=parseQR("#"+h);if(id)ST.want={id}}
+window.addEventListener("hashchange",()=>{readHash();tryWanted()});
+
+/* ============ OKUT ============ */
+function viewScan(){
+  const n=birdList().length,d=nearestDay();
+  if(!n&&ST.mode!=="local"&&ST.mode!=="demo"&&!ST.loaded)return `<div class="empty">Kayıtlar yükleniyor…</div>`;
+  if(!n)return `<section class="card stack"><h2>Deneme henüz kurulmadı</h2><p class="muted">Bireyler oluşturulunca her biri için QR etiketi basılır. Etiketi telefonun kamerasıyla okuttuğunda bireyin kartı doğrudan açılır.</p><div class="row"><button class="btn primary" id="goSetup">Denemeyi kur</button><button class="btn" id="goDemo">Örnek veriyle dene</button></div></section>`;
+  const done=birdList().filter(b=>alive(b,d)&&wOf(b,d)!=null).length,act=birdList().filter(b=>alive(b,d)).length,dd=dayOfDate();
+  return `<section class="card stack">
+    <div class="row" style="justify-content:space-between"><h2>Bireyi aç</h2><span class="pill ok">${dd!=null?`Bugün ${dd}. gün`:"Başlangıç tarihi girilmedi"}</span></div>
+    <ol class="steps"><li><b>En hızlısı:</b> telefonun kendi kamerasını aç, etiketteki QR'a tut, çıkan bağlantıya dokun. Bu sayfa o bireyin kartıyla açılır.</li><li>Ya da aşağıdaki düğmeyle etiketin fotoğrafını çek.</li><li>Ya da numarayı yaz.</li></ol>
+    <button class="btn primary big" id="scanBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3"/><rect x="8" y="8" width="8" height="8"/></svg>Etiketin fotoğrafını çek</button>
+    <form class="row" id="manualForm"><input class="i mono" id="manualId" placeholder="Örnek: AT017" autocomplete="off" autocapitalize="characters" style="flex:1;min-width:140px"><button class="btn">Aç</button></form>
+  </section>
+  <section class="card">
+    <h3>${d}. gün tartımı</h3>
+    <div class="kpis">
+      <div class="kpi"><div class="v">${done}/${act}</div><div class="l">tartılan / canlı birey</div></div>
+      ${Object.keys(G()).map(g=>`<div class="kpi"><div class="v">${fmt(genoMeans(g,d))}</div><div class="l">${esc(gname(g))} ortalaması (g)</div></div>`).join("")}
+    </div>
+    <div style="margin-top:12px" class="row"><button class="btn" id="todoBtn">Bu gün tartılmayanları göster</button></div>
+    <div id="todo"></div>
+  </section>`;
+}
+BIND.okut=()=>{
+  const s=$("#goSetup");if(s){s.onclick=()=>setView("ayar");$("#goDemo").onclick=loadDemo;return}
+  if(!$("#scanBtn"))return;
+  $("#scanBtn").onclick=()=>scanPhoto(null);
+  $("#manualForm").onsubmit=e=>{e.preventDefault();openBird($("#manualId").value)};
+  $("#todoBtn").onclick=()=>{
+    const d=nearestDay();const l=birdList().filter(b=>alive(b,d)&&wOf(b,d)==null);
+    $("#todo").innerHTML=l.length?`<div class="row" style="margin-top:10px">${l.slice(0,400).map(b=>`<button class="tag ${esc(b.geno)}" data-open="${esc(b.id)}" style="cursor:pointer">${esc(b.id)}</button>`).join("")}</div>`:`<p class="muted">Bu günün tüm canlı bireyleri tartıldı.</p>`;
+    document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open));
+  };
+};
+async function scanPhoto(sec){
+  const f=await pickFile("#fileScan","image/*");if(!f)return;
+  toast("Okunuyor…");
+  try{const {canvas}=await compress(f,1600);const id=await decodeQR(canvas);
+    if(!id){toast("QR bulunamadı. Daha yakından, ışıklı ve düz tutarak tekrar dene ya da numarayı yaz.",4500);return}
+    if(openBird(id,sec))toast(id+" açıldı")}
+  catch(e){toast(e.message)}
+}
+
+/* ============ BİREY KARTI ============ */
+function viewBird(b){
+  const ds=days(),d=ST.curDay??nearestDay(),wk=b.weeks?.["d"+d]||{},rw=ST.canWrite;
+  const g=b.geno,col=cssv(g==="AT"?"--at":g==="RS"?"--rs":"--accent"),mut=cssv("--muted");
+  const own=ds.map(x=>[x,wOf(b,x)]);
+  const pm=ds.map(x=>[x,mean(penBirds(b.pen).map(y=>wOf(y,x)))]);
+  const tg=ds.map(x=>[x,num(ST.config.targets?.[g]?.[x])]);
+  const ex=FON("weekly"),exp=expectedW(b,d),st=b.status||"aktif";
+  const head=`<section class="card stack">
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <div class="stack" style="gap:8px"><span class="tag xl ${esc(g)}">${esc(b.id)}</span>
+        <div class="row small"><b>${esc(gname(g))}</b><span>Kümes ${esc(b.pen)}</span><span>Kanat no: <span class="mono">${esc(b.wing||"—")}</span></span><span>Cinsiyet: ${esc(b.sex||"belirsiz")}</span>
+        <span class="pill ${st==="aktif"?"ok":st==="öldü"?"bad":""}">${esc(st)}${st==="öldü"&&b.deathDay!=null?` · ${esc(b.deathDay)}. gün`:""}</span>${b.rna?`<span class="pill warn">RNA-seq</span>`:""}</div></div>
+      ${rw?`<button class="btn" id="editBird">Kimliği düzenle</button>`:""}
+    </div></section>`;
+  const form=rw?`<section class="card stack" data-form="week" id="weekForm">
+    <div class="row" style="justify-content:space-between"><h3>${d}. gün ölçümü</h3><span class="muted small">${esc(trDate(dateOfDay(d)))}</span></div>
+    <div class="daybar">${ds.map(x=>`<button data-day="${x}" class="${wOf(b,x)!=null?"has":""}" aria-pressed="${x===d}">${x}. gün</button>`).join("")}</div>
+    <div class="fgrid">
+      <label class="f"><span>Canlı ağırlık <span class="u">(g)</span></span><input class="i num" id="w_w" inputmode="decimal" value="${esc(wk.w??"")}" placeholder="${exp?"≈ "+fmt(exp):""}"></label>
+      ${ex.map(m=>field("x_"+m.k,m,wk[m.k])).join("")}
+      <label class="f"><span>Halka durumu</span><select class="i" id="w_band">${bandOpts().map(o=>`<option ${wk.band===o?"selected":""}>${esc(o)}</option>`).join("")}</select></label>
+    </div>
+    <div id="wWarn"></div>
+    <div class="photoin">
+      <button class="ph" id="ph_top" type="button">${wk.top?imgTag(wk.top,"üstten"):"Üstten fotoğraf<br>(ölçüm için)"}</button>
+      <button class="ph" id="ph_side" type="button">${wk.side?imgTag(wk.side,"yandan"):"Yandan fotoğraf<br>(isteğe bağlı)"}</button>
+    </div>
+    <label class="f"><span>Not</span><textarea class="i" id="w_note" rows="2">${esc(wk.note||"")}</textarea></label>
+    <div class="row"><button class="btn primary" id="saveWeek">Kaydet</button><button class="btn" id="saveNext">Kaydet, sonraki bireye geç</button></div>
+  </section>`:"";
+  const growth=`<section class="card stack"><h3>Gelişim</h3>
+    <div class="strip">${ds.map(x=>{const w=b.weeks?.["d"+x]||{};return `<div class="shot"><div class="ph">${w.top?imgTag(w.top,b.id+" "+x+". gün"):`<span>fotoğraf yok</span>`}</div><span>${x}. gün · <b>${wOf(b,x)!=null?fmt(wOf(b,x))+" g":"—"}</b></span></div>`}).join("")}</div>
+    ${lineChart({series:[{pts:tg,color:mut,dash:"2 4",wd:1.5},{pts:pm,color:mut,dash:"6 4"},{pts:own,color:col,dots:1,wd:2.5}]})}
+    <div class="legend"><span><i style="border-color:${col}"></i>${esc(b.id)}</span><span><i style="border-color:${mut};border-top-style:dashed"></i>Kümes ${esc(b.pen)} ortalaması</span><span><i style="border-color:${mut};border-top-style:dotted"></i>Hedef</span></div>
+  </section>`;
+  const table=`<section class="card"><h3>Tüm haftalar</h3>
+    <div class="tablewrap"><table class="t"><thead><tr><th>Gün</th><th>Tarih</th><th class="n">Ağırlık (g)</th><th class="n">Günlük artış (g)</th>${ex.map(m=>`<th class="n">${esc(flabel(m))}</th>`).join("")}<th>Halka</th><th>Not</th></tr></thead><tbody>
+    ${ds.map((x,i)=>{const w=b.weeks?.["d"+x]||{};const p=i?wOf(b,ds[i-1]):null;const c=wOf(b,x);return `<tr><td>${x}</td><td>${esc(trDate(w.date))}</td><td class="n">${fmt(c)}</td><td class="n">${c!=null&&p!=null?fmt((c-p)/(x-ds[i-1]),1):"—"}</td>${ex.map(m=>`<td class="n">${esc(w[m.k]??"")}</td>`).join("")}<td>${esc(w.band||"")}</td><td>${esc(w.note||"")}</td></tr>`}).join("")}
+    </tbody></table></div></section>`;
+  return `<div class="row"><button class="btn ghost" id="back">← Geri</button></div>${head}${form}${growth}${table}${rw?secSlaughter(b)+secMeat(b)+secRna(b):roSections(b)}`;
+}
+function roSections(b){
+  const part=(title,list,obj,extra)=>{const rows=list.map(f=>[flabel(f),obj?.[f.k]]).filter(r=>r[1]!==undefined&&r[1]!==""&&r[1]!=null);if(extra)extra.forEach(r=>{if(r[1]!=null)rows.push(r)});if(!rows.length)return "";
+    return `<section class="card"><h3>${esc(title)}</h3><div class="tablewrap"><table class="t"><tbody>${rows.map(r=>`<tr><td>${esc(r[0])}</td><td class="n">${esc(typeof r[1]==="number"?fmt(r[1],2):r[1])}</td></tr>`).join("")}</tbody></table></div></section>`};
+  const c=sCalc(b.slaughter),m=mCalc(b.meat);
+  return part("Kesim ve karkas",FON("slaughter"),b.slaughter,[["Karkas randımanı (%)",c.yield],["Göğüs eti / karkas (%)",c.breast],["But / karkas (%)",c.thigh]])
+    +part("Et kalitesi",FON("meat"),b.meat,[["Drip loss (%)",m.drip],["Cooking loss (%)",m.cook]]);
+}
+function field(id,m,v){
+  const lab=`<span>${esc(m.l)}${m.u?` <span class="u">(${esc(m.u)})</span>`:""}</span>`;
+  if(ftype(m)==="score")return `<label class="f">${lab}<select class="i" id="${id}"><option value=""></option>${m.opts.map(o=>`<option ${String(v)===String(o)?"selected":""}>${esc(o)}</option>`).join("")}</select></label>`;
+  if(ftype(m)==="text")return `<label class="f">${lab}<input class="i" id="${id}" value="${esc(v??"")}"></label>`;
+  return `<label class="f">${lab}<input class="i num" id="${id}" inputmode="decimal" value="${esc(v??"")}"></label>`;
+}
+function secSlaughter(b){
+  const s=b.slaughter||{},c=sCalc(s);
+  return `<details class="sec" id="sec-kesim" ${ST.curSec==="kesim"?"open":""}><summary>Kesim ve karkas ${s.fastedW?`<span class="pill ok">girildi</span>`:""}</summary><div class="body" data-form="kesim">
+    <div class="fgrid"><label class="f"><span>Kesim tarihi</span><input class="i" type="date" id="s_date" value="${esc(s.date||"")}"></label>${FON("slaughter").map(m=>field("s_"+m.k,m,s[m.k])).join("")}</div>
+    <div class="fgrid"><div class="calc">Karkas randımanı: ${fmt(c.yield,1)} %</div><div class="calc">Göğüs eti / karkas: ${fmt(c.breast,1)} %</div><div class="calc">But / karkas: ${fmt(c.thigh,1)} %</div><div class="calc">Abdominal yağ / canlı ağırlık: ${fmt(c.fat,2)} %</div></div>
+    <div class="row"><button class="btn primary" id="saveS">Kesim verisini kaydet</button></div>
+  </div></details>`;
+}
+function groupBy(list){const o=[];list.forEach(f=>{const g=f.g||"Diğer";let e=o.find(x=>x.g===g);if(!e){e={g,f:[]};o.push(e)}e.f.push(f)});return o}
+function secMeat(b){
+  const m=b.meat||{},c=mCalc(m),on=FON("meat");
+  return `<details class="sec" id="sec-et" ${ST.curSec==="et"?"open":""}><summary>Et kalitesi ${Object.values(m).some(v=>v!==""&&v!=null)?`<span class="pill ok">girildi</span>`:""}</summary><div class="body" data-form="et">
+  ${groupBy(on).map(s=>{const refs=[...new Set(s.f.map(f=>f.ref).filter(Boolean))];const keys=s.f.map(f=>f.k);return `<div class="sub">${esc(s.g)}</div><div class="fgrid">${s.f.map(f=>field("m_"+f.k,f,m[f.k])).join("")}
+    ${keys.includes("dm2")?`<div class="calc">Drip loss: ${fmt(c.drip,2)} %</div>`:""}${keys.includes("cm2")?`<div class="calc">Cooking loss: ${fmt(c.cook,2)} %</div>`:""}</div>${refs.length?`<div class="ref">${esc(refs.join(" · "))}</div>`:""}`}).join("")}
+    <div class="row"><button class="btn primary" id="saveM">Et kalitesini kaydet</button></div>
+  </div></details>`;
+}
+function secRna(b){
+  const r=b.rnaseq||{},q=r.qpcr||[];
+  return `<details class="sec" id="sec-rna" ${ST.curSec==="rna"?"open":""}><summary>RNA-seq örneği ${b.rna?`<span class="pill warn">seçildi</span>`:""}</summary><div class="body" data-form="rna">
+    <label class="row small"><input type="checkbox" id="r_flag" ${b.rna?"checked":""}> Bu birey RNA-seq örneği</label>
+    <div class="fgrid">${FON("rna").map(f=>field("r_"+f.k,f,r[f.k])).join("")}</div>
+    <div class="sub">qRT-PCR (referans gen: ${esc(ST.config.refGene)})</div>
+    <div class="tablewrap"><table class="t" id="qTable"><thead><tr><th>Gen</th><th class="n">Hedef Ct</th><th class="n">${esc(ST.config.refGene)} Ct</th><th class="n">ΔCt</th><th></th></tr></thead><tbody>
+    ${q.map(x=>qRow(x)).join("")}</tbody></table></div>
+    <div class="row"><button class="btn" id="qAdd" type="button">Gen ekle</button><button class="btn primary" id="saveR">RNA-seq verisini kaydet</button></div>
+  </div></details>`;
+}
+const qRow=x=>`<tr><td><input class="i mono" data-k="gene" value="${esc(x.gene||"")}" style="min-width:90px"></td><td><input class="i num" data-k="ct" inputmode="decimal" value="${esc(x.ct??"")}"></td><td><input class="i num" data-k="ref" inputmode="decimal" value="${esc(x.ref??"")}"></td><td class="n">${num(x.ct)!=null&&num(x.ref)!=null?fmt(num(x.ct)-num(x.ref),2):"—"}</td><td><button class="btn ghost" data-qdel type="button">Sil</button></td></tr>`;
+const val=id=>{const e=document.getElementById(id);return e?e.value.trim():undefined};
+function collect(prefix,list){const o={};list.forEach(m=>{const v=val(prefix+m.k);if(v===undefined)return;o[m.k]=ftype(m)==="num"?(v===""?"":String(num(v)??v)):v});return o}
+function clearDirty(f){const e=document.querySelector(`[data-form="${f}"]`);if(e)e.dataset.dirty=""}
+function bindBird(){
+  const b=ST.birds[ST.cur];const id=b.id;
+  $("#back").onclick=()=>{ST.cur=null;render()};
+  if(!ST.canWrite)return;
+  const d=ST.curDay??nearestDay();
+  document.querySelectorAll("[data-day]").forEach(x=>x.onclick=()=>{if($("#weekForm").dataset.dirty==="1"){toast("Önce bu günü kaydet");return}ST.curDay=Number(x.dataset.day);render()});
+  const pend={};
+  $("#w_w").oninput=()=>{const w=num(val("w_w")),e=expectedW(b,d);const box=$("#wWarn");box.innerHTML=w!=null&&e&&Math.abs(w-e)/e>0.25?`<div class="banner" style="margin:0">${fmt(w)} g, beklenen ≈ ${fmt(e)} g değerinden %${fmt(Math.abs(w-e)/e*100)} sapıyor. Doğru birey ve doğru değer mi?</div>`:""};
+  ["top","side"].forEach(slot=>{$("#ph_"+slot).onclick=async()=>{
+    const f=await pickFile("#filePhoto","image/*");if(!f)return;
+    const box=$("#ph_"+slot);box.textContent="İşleniyor…";
+    try{
+      const {blob,canvas}=await compress(f,1600);
+      pend[slot]=blob;box.innerHTML=`<img src="${URL.createObjectURL(blob)}" alt="">`;$("#weekForm").dataset.dirty="1";
+      const qid=await decodeQR(canvas).catch(()=>null);
+      if(qid&&qid!==id)dlg(`<h3>Etiket uyuşmuyor</h3><p>Fotoğraftaki QR <b class="mono">${esc(qid)}</b>, açık kart <b class="mono">${esc(id)}</b>. Yanlış birey olabilir; kaydetmeden önce kontrol et.</p>`,null);
+      else if(qid===id)toast("Fotoğraftaki etiket doğrulandı: "+id);
+    }catch(e){box.textContent=e.message}
+  }});
+  const saveWeek=async next=>{
+    const btns=[$("#saveWeek"),$("#saveNext")];btns.forEach(x=>x.disabled=true);
+    try{
+      const patch={w:val("w_w")===""?"":String(num(val("w_w"))??""),band:val("w_band"),note:val("w_note"),date:dateOfDay(d)||todayISO(),at:new Date().toISOString()};
+      FON("weekly").forEach(m=>{const v=val("x_"+m.k);if(v!==undefined)patch[m.k]=ftype(m)==="num"?(v===""?"":String(num(v)??v)):v});
+      for(const slot of ["top","side"])if(pend[slot]){toast("Fotoğraf yükleniyor…",8000);const r=await Store.putPhoto(pend[slot],id);if(r)patch[slot]=r}
+      if(!await Store.patch("birds/"+id,{weeks:{["d"+d]:patch}}))return;
+      clearDirty("week");toast(`${id} · ${d}. gün kaydedildi`);
+      if(next){ST.cur=null;ST.view="okut"}
+      render();
+    }finally{btns.forEach(x=>{if(x&&x.isConnected)x.disabled=false})}
+  };
+  $("#saveWeek").onclick=()=>saveWeek(false);$("#saveNext").onclick=()=>saveWeek(true);
+  $("#editBird").onclick=()=>editBirdDlg(b);
+  $("#saveS").onclick=async()=>{const o=collect("s_",FL("slaughter"));o.date=val("s_date");if(await Store.patch("birds/"+id,{slaughter:o,status:o.fastedW?"kesildi":b.status||"aktif"})){clearDirty("kesim");toast("Kesim verisi kaydedildi");ST.curSec="kesim";render()}};
+  $("#saveM").onclick=async()=>{if(await Store.patch("birds/"+id,{meat:collect("m_",FL("meat"))})){clearDirty("et");toast("Et kalitesi kaydedildi");ST.curSec="et";render()}};
+  const bindQ=()=>document.querySelectorAll("[data-qdel]").forEach(x=>x.onclick=()=>{x.closest("tr").remove();document.querySelector('[data-form="rna"]').dataset.dirty="1"});bindQ();
+  $("#qAdd").onclick=()=>{$("#qTable tbody").insertAdjacentHTML("beforeend",qRow({}));bindQ()};
+  $("#saveR").onclick=async()=>{
+    const o=collect("r_",FL("rna"));
+    o.qpcr=[...document.querySelectorAll("#qTable tbody tr")].map(tr=>{const x={};tr.querySelectorAll("[data-k]").forEach(i=>x[i.dataset.k]=i.value.trim());return x}).filter(x=>x.gene||x.ct||x.ref);
+    if(await Store.patch("birds/"+id,{rna:$("#r_flag").checked,rnaseq:o})){clearDirty("rna");toast("RNA-seq verisi kaydedildi");ST.curSec="rna";render()}
+  };
+}
+function editBirdDlg(b,isNew){
+  const gs=Object.keys(G());b=b||{id:"",geno:gs[0],pen:1,status:"aktif"};
+  dlg(`<h3>${isNew?"Yeni birey":esc(b.id)+" kimliği"}</h3>
+    <div class="fgrid">
+      <label class="f" style="grid-column:1/-1"><span>Kimlik (etiketteki numara)</span><input class="i mono" id="e_id" value="${esc(b.id)}" autocapitalize="characters"></label>
+      <label class="f"><span>Genotip</span><select class="i" id="e_geno">${gs.map(g=>`<option value="${esc(g)}" ${b.geno===g?"selected":""}>${esc(gname(g))}</option>`).join("")}</select></label>
+      <label class="f"><span>Kümes</span><input class="i num" id="e_pen" inputmode="numeric" value="${esc(b.pen)}"></label>
+      <label class="f"><span>Kanat halkası no</span><input class="i mono" id="e_wing" value="${esc(b.wing||"")}"></label>
+      <label class="f"><span>Cinsiyet</span><select class="i" id="e_sex">${["","erkek","dişi"].map(s=>`<option ${b.sex===s?"selected":""}>${s}</option>`).join("")}</select></label>
+      <label class="f"><span>Durum</span><select class="i" id="e_st">${["aktif","öldü","kesildi","çıkarıldı"].map(s=>`<option ${(b.status||"aktif")===s?"selected":""}>${s}</option>`).join("")}</select></label>
+      <label class="f"><span>Ölüm günü</span><input class="i num" id="e_dd" inputmode="numeric" value="${esc(b.deathDay??"")}"></label>
+      <label class="f"><span>Ölüm ağırlığı <span class="u">(g)</span></span><input class="i num" id="e_dw" inputmode="decimal" value="${esc(b.deathW??"")}"></label>
+      <label class="f"><span>Ölüm nedeni</span><input class="i" id="e_dc" value="${esc(b.deathCause||"")}"></label>
+    </div>
+    <p class="ref">Kimliği değiştirirsen tüm ölçümler yeni kimliğe taşınır ve bu bireyin QR etiketini yeniden basman gerekir. Ölü bireyin ağırlığı kümes FCR hesabında kazanca eklenir.</p>
+    ${isNew?"":`<button class="btn danger" id="e_del" type="button">Bu bireyi sil</button>`}`,
+  async()=>{
+    const nid=normId(val("e_id"));
+    if(!nid||!/^[A-Z0-9ÇĞİÖŞÜ._-]+$/.test(nid)){toast("Kimlik yalnızca harf, rakam, nokta, alt çizgi ve tire içerebilir");return false}
+    const info={geno:val("e_geno"),pen:Number(val("e_pen"))||b.pen,wing:val("e_wing"),sex:val("e_sex"),status:val("e_st"),deathDay:num(val("e_dd")),deathW:num(val("e_dw")),deathCause:val("e_dc")};
+    if(isNew||nid!==b.id){
+      if(ST.birds[nid]){toast(nid+" zaten var");return false}
+      const doc=deepMerge(isNew?{weeks:{},created:new Date().toISOString()}:clone(b),{...info,id:nid});
+      if(!await Store.patch("birds/"+nid,doc,true))return false;
+      if(!isNew){await Store.remove("birds/"+b.id);if(ST.cur===b.id)ST.cur=nid;toast(`${b.id} → ${nid} taşındı. Etiketi yeniden bas.`,5000)}else toast(nid+" eklendi");
+    }else{await Store.patch("birds/"+b.id,info);toast("Kimlik güncellendi")}
+    render();
+  },isNew?"Ekle":"Kaydet");
+  const del=$("#e_del");if(del)del.onclick=()=>dlg(`<h3>${esc(b.id)} silinsin mi?</h3><p>Bu bireyin tüm haftalık, kesim, et kalitesi ve RNA-seq kayıtları silinir. Geri alınamaz.</p>`,async()=>{await Store.remove("birds/"+b.id);ST.cur=null;toast(b.id+" silindi");render()},"Sil",true);
+}
+
+/* ============ BİREYLER ============ */
+function viewBirds(){
+  const f=ST.filter,ds=days();
+  if(!birdList().length)return `<section class="stack"><div class="row"><h2 style="flex:1">Bireyler</h2>${ST.canWrite?`<button class="btn" id="addBird">Birey ekle</button>`:""}</div><div class="empty">Henüz birey yok. Ayarlar → Bireyler ve QR etiketleri bölümünden toplu oluştur.</div></section>`;
+  let l=birdList();
+  if(f.g)l=l.filter(b=>b.geno===f.g);if(f.p)l=l.filter(b=>String(b.pen)===f.p);if(f.s)l=l.filter(b=>(b.status||"aktif")===f.s);
+  if(f.q){const q=normId(f.q);l=l.filter(b=>b.id.includes(q)||normId(b.wing).includes(q))}
+  return `<section class="stack">
+    <div class="row"><h2 style="flex:1">Bireyler <span class="muted small">${l.length}</span></h2>${ST.canWrite?`<button class="btn" id="addBird">Birey ekle</button>`:""}</div>
+    <div class="row">
+      <input class="i mono" id="fq" placeholder="Kimlik veya kanat no" value="${esc(f.q)}" style="flex:1;min-width:160px">
+      <select class="i" id="fg" style="width:auto"><option value="">Tüm genotipler</option>${Object.keys(G()).map(g=>`<option value="${esc(g)}" ${f.g===g?"selected":""}>${esc(gname(g))}</option>`).join("")}</select>
+      <select class="i" id="fp" style="width:auto"><option value="">Tüm kümesler</option>${penIds().map(p=>`<option value="${p}" ${f.p===String(p)?"selected":""}>Kümes ${p}</option>`).join("")}</select>
+      <select class="i" id="fs" style="width:auto"><option value="">Tüm durumlar</option>${["aktif","öldü","kesildi","çıkarıldı"].map(s=>`<option ${f.s===s?"selected":""}>${s}</option>`).join("")}</select>
+    </div>
+    <div class="tablewrap"><table class="t"><thead><tr><th>Kimlik</th><th>Kümes</th><th>Cinsiyet</th><th>Durum</th>${ds.map(x=>`<th class="n">${x}. gün</th>`).join("")}<th class="n">Fotoğraf</th></tr></thead><tbody>
+    ${l.map(b=>`<tr class="click" data-open="${esc(b.id)}"><td><span class="tag ${esc(b.geno)}">${esc(b.id)}</span>${b.rna?` <span class="pill warn">RNA</span>`:""}</td><td>${esc(b.pen)}</td><td>${esc(b.sex||"")}</td><td>${esc(b.status||"aktif")}</td>${ds.map(x=>`<td class="n">${fmt(wOf(b,x))}</td>`).join("")}<td class="n">${Object.values(b.weeks||{}).filter(w=>w.top).length}</td></tr>`).join("")}
+    </tbody></table></div></section>`;
+}
+BIND.bireyler=()=>{
+  const ab=$("#addBird");if(ab)ab.onclick=()=>editBirdDlg(null,true);
+  if(!$("#fq"))return;
+  const re=()=>{ST.filter={q:$("#fq").value,g:$("#fg").value,p:$("#fp").value,s:$("#fs").value};const pos=$("#fq").selectionStart;render();const q=$("#fq");if(q&&pos!=null){q.focus();q.setSelectionRange(pos,pos)}};
+  $("#fq").oninput=re;["#fg","#fp","#fs"].forEach(s=>$(s).onchange=()=>{re();document.activeElement.blur()});
+  document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open));
+};
+
+/* ============ KÜMES ============ */
+function viewPens(){
+  const ps=penIds();if(!ps.includes(ST.penSel))ST.penSel=ps[0];
+  const p=ST.penSel,ds=days(),stats=penStats(p),pg=penGeno(p),gs=Object.keys(G());
+  const colors={AT:cssv("--at"),RS:cssv("--rs")};
+  const series=[];gs.forEach(g=>ps.filter(x=>penGeno(x)===g).forEach(x=>series.push({pts:penStats(x).map(r=>[r.d,r.mean]),color:colors[g]||cssv("--accent"),wd:x===p?2.5:1.5,dash:x===p?null:"4 3",dots:x===p})));
+  const last=[...stats].reverse().find(r=>r.n);
+  const gsum=gs.map(g=>{const cf=ps.filter(x=>penGeno(x)===g).map(x=>[...penStats(x)].reverse().find(r=>r.cfcr!=null)?.cfcr).filter(x=>x!=null);return {g,cfcr:mean(cf),cfsd:sd(cf),n:cf.length}});
+  return `<section class="stack">
+    <h2>Kümesler</h2>
+    <div class="pens">${ps.map(x=>{const r=[...penStats(x)].reverse().find(y=>y.n);const g=penGeno(x);return `<button class="pen ${esc(g)}" data-pen="${x}" aria-pressed="${x===p}"><span class="pn">Kümes ${x}</span><span class="small">${esc(gname(g)||"atanmadı")}</span><span class="small muted">${penBirds(x).filter(b=>(b.status||"aktif")==="aktif").length} canlı · ${r?fmt(r.mean)+" g ("+r.d+". gün)":"tartım yok"}</span></button>`}).join("")}</div>
+    <div class="card"><h3>Genotip ortalaması: kümülatif FCR</h3>
+      <p class="small muted">Deney birimi kümestir; FCR her kümes için hesaplanır, genotip ortalaması kümeslerin ortalamasıdır.</p>
+      <div class="kpis">${gsum.map(s=>`<div class="kpi"><div class="v">${fmt(s.cfcr,3)}</div><div class="l">${esc(gname(s.g))} · ${s.n} kümes${s.cfsd!=null?" · SS "+fmt(s.cfsd,3):""}</div></div>`).join("")}</div>
+      <div style="margin-top:12px">${lineChart({series})}</div>
+      <div class="legend">${gs.map(g=>`<span><i style="border-color:${colors[g]||cssv("--accent")}"></i>${esc(gname(g))} kümesleri</span>`).join("")}<span>Seçili kümes kalın çizgi ve noktalarla gösterilir.</span></div>
+    </div>
+    <div class="card stack" data-form="pen">
+      <div class="row" style="justify-content:space-between"><h3>Kümes ${p} · ${esc(gname(pg))}</h3><span class="muted small">${last?`son tartım ${last.d}. gün, CV %${fmt(last.cv,1)}`:""}</span></div>
+      <p class="small muted">Her tartım gününde o döneme verilen yemi ve dönem sonunda yemlikte kalanı kg olarak gir. Ortalama ağırlık ve biyokütle birey kayıtlarından hesaplanır; ölü bireylerin ağırlığı kazanca eklenir.</p>
+      <div class="tablewrap"><table class="t"><thead><tr><th>Gün</th><th class="n">Tartılan</th><th class="n">Ort. ağırlık (g)</th><th class="n">CV (%)</th><th class="n">Günlük artış (g)</th><th>Verilen yem (kg)</th><th>Kalan yem (kg)</th><th class="n">Ölü</th><th class="n">FCR dönem</th><th class="n">FCR kümülatif</th><th>Sıcaklık (°C)</th><th>Nem (%)</th></tr></thead><tbody>
+      ${stats.map(r=>`<tr data-d="${r.d}"><td>${r.d}</td><td class="n">${r.n}/${r.alive}</td><td class="n">${fmt(r.mean)}</td><td class="n">${fmt(r.cv,1)}</td><td class="n">${fmt(r.adg,1)}</td>
+        <td>${r.d===ds[0]?`<span class="muted small">başlangıç</span>`:`<input class="i num" data-k="feed" inputmode="decimal" value="${esc(r.wk.feed??"")}">`}</td>
+        <td>${r.d===ds[0]?"":`<input class="i num" data-k="left" inputmode="decimal" value="${esc(r.wk.left??"")}">`}</td>
+        <td class="n">${r.deadN||""}</td><td class="n">${fmt(r.fcr,3)}</td><td class="n">${fmt(r.cfcr,3)}</td>
+        <td><input class="i num" data-k="temp" inputmode="decimal" value="${esc(r.wk.temp??"")}"></td><td><input class="i num" data-k="rh" inputmode="decimal" value="${esc(r.wk.rh??"")}"></td></tr>`).join("")}
+      </tbody></table></div>
+      <div class="row"><button class="btn primary" id="savePen">Kümes ${p} kaydını kaydet</button></div>
+    </div></section>`;
+}
+BIND.kumes=()=>{
+  document.querySelectorAll("[data-pen]").forEach(x=>x.onclick=()=>{if($('[data-form="pen"]')?.dataset.dirty==="1"){toast("Önce bu kümesi kaydet");return}ST.penSel=Number(x.dataset.pen);render()});
+  $("#savePen").onclick=async()=>{
+    const p=ST.penSel,weeks={};
+    document.querySelectorAll("tr[data-d]").forEach(tr=>{const o={};tr.querySelectorAll("[data-k]").forEach(i=>o[i.dataset.k]=i.value.trim()===""?"":String(num(i.value)??""));if(Object.keys(o).length)weeks["d"+tr.dataset.d]=o});
+    if(await Store.patch("pens/B"+p,{pen:p,geno:penGeno(p),weeks})){clearDirty("pen");toast(`Kümes ${p} kaydedildi`);render()}
+  };
+};
+
+/* ============ ET KALİTESİ ============ */
+function meatRows(){
+  const rows=[["Kesim ağırlığı (g)",b=>num(b.slaughter?.fastedW),0],["Karkas randımanı (%)",b=>sCalc(b.slaughter).yield,1],["Göğüs eti / karkas (%)",b=>sCalc(b.slaughter).breast,1],["But / karkas (%)",b=>sCalc(b.slaughter).thigh,1],["Abdominal yağ / canlı ağırlık (%)",b=>sCalc(b.slaughter).fat,2]];
+  FON("meat").forEach(f=>{if(["dm1","dm2","cm1","cm2"].includes(f.k)||ftype(f)==="text")return;rows.push([flabel(f),b=>num(b.meat?.[f.k]),2])});
+  rows.push(["Drip loss (%)",b=>mCalc(b.meat).drip,2],["Cooking loss (%)",b=>mCalc(b.meat).cook,2]);
+  return rows;
+}
+function viewMeat(){
+  const done=birdList().filter(b=>b.slaughter?.fastedW||Object.values(b.meat||{}).some(v=>v!==""&&v!=null));
+  const gs=Object.keys(G()),vis=meatRows().filter(r=>done.some(b=>r[1](b)!=null));
+  return `<section class="stack">
+    <h2>Kesim ve et kalitesi</h2>
+    <div class="card stack"><h3>Ölçüm gir</h3>
+      <p class="small muted">Kesim hattında etiketi telefon kamerasıyla okut ya da numarayı yaz; bireyin kesim veya et kalitesi bölümü açılır. Drip loss, karkas randımanı ve oranlar otomatik hesaplanır.</p>
+      <form class="row" id="mForm"><input class="i mono" id="mId" placeholder="Örnek: RS042" autocapitalize="characters" style="flex:1;min-width:130px"><select class="i" id="mSec" style="width:auto"><option value="kesim">Kesim</option><option value="et">Et kalitesi</option><option value="rna">RNA-seq</option></select><button class="btn primary">Aç</button><button class="btn" type="button" id="mScan">Etiketi fotoğrafla</button></form>
+    </div>
+    ${done.length?`<div class="card"><h3>Genotip ortalamaları (ort. ± SS, n)</h3><div class="tablewrap"><table class="t"><thead><tr><th>Özellik</th>${gs.map(g=>`<th class="n">${esc(gname(g))}</th>`).join("")}</tr></thead><tbody>
+      ${vis.map(r=>`<tr><td>${esc(r[0])}</td>${gs.map(g=>{const a=done.filter(b=>b.geno===g).map(r[1]).filter(x=>x!=null);return `<td class="n">${a.length?fmt(mean(a),r[2])+" ± "+fmt(sd(a),r[2])+` <span class="muted">(${a.length})</span>`:"—"}</td>`}).join("")}</tr>`).join("")}
+      </tbody></table></div><p class="ref">Tanımlayıcı özettir. Karşılaştırma için Excel'e aktarıp genotip ve cinsiyet sabit, kümes rastgele etkili karma model kur.</p></div>
+    <div class="card"><h3>Birey bazında</h3><div class="tablewrap"><table class="t"><thead><tr><th>Kimlik</th><th>Cinsiyet</th>${vis.map(r=>`<th class="n">${esc(r[0])}</th>`).join("")}</tr></thead><tbody>
+      ${done.map(b=>`<tr class="click" data-open="${esc(b.id)}"><td><span class="tag ${esc(b.geno)}">${esc(b.id)}</span></td><td>${esc(b.sex||"")}</td>${vis.map(r=>`<td class="n">${fmt(r[1](b),r[2])}</td>`).join("")}</tr>`).join("")}
+      </tbody></table></div></div>`:`<div class="empty">Kesim yapılınca ortalamalar ve birey tablosu burada görünecek.</div>`}
+  </section>`;
+}
+BIND.et=()=>{
+  $("#mForm").onsubmit=e=>{e.preventDefault();openBird($("#mId").value,$("#mSec").value)};
+  $("#mScan").onclick=()=>scanPhoto($("#mSec").value);
+  document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open,"et"));
+};
+
+/* ============ RNA-seq ============ */
+let DEG=null;
+const candList=()=>(ST.config.cand||"").split(/[,\s]+/).filter(Boolean).map(up);
+function viewRna(){
+  const rb=birdList().filter(b=>b.rna),gs=Object.keys(G()),q=qpcrSummary(rb);
+  return `<section class="stack">
+    <h2>RNA-seq</h2>
+    <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Örnek bireyler <span class="muted small">${rb.length}</span></h3><button class="btn" id="suggest">Seçim kuralına göre öner</button></div>
+      <p class="small muted">Kural: her genotipten 4 erkek; kesim ağırlığı grup medyanına en yakın; mümkünse farklı kümeslerden. Kuralı önceden belirlemek örnek seçimini hakeme karşı savunulur kılar.</p>
+      ${rb.length?`<div class="tablewrap"><table class="t"><thead><tr><th>Kimlik</th><th>Kümes</th><th>Örnek kodu</th><th class="n">Kesim (g)</th><th class="n">RNA (ng/µL)</th><th class="n">A260/280</th><th class="n">A260/230</th><th class="n">RIN</th><th class="n">Okuma (milyon)</th><th class="n">Hizalanma (%)</th><th>SRA</th></tr></thead><tbody>
+      ${rb.map(b=>{const r=b.rnaseq||{};const low=num(r.rin)!=null&&num(r.rin)<7;return `<tr class="click" data-open="${esc(b.id)}"><td><span class="tag ${esc(b.geno)}">${esc(b.id)}</span></td><td>${esc(b.pen)}</td><td class="mono">${esc(r.code||"")}</td><td class="n">${fmt(num(b.slaughter?.fastedW)??wOf(b,days().slice(-1)[0]))}</td><td class="n">${esc(r.conc||"")}</td><td class="n">${esc(r.r280||"")}</td><td class="n">${esc(r.r230||"")}</td><td class="n">${low?`<span class="pill bad">${esc(r.rin)}</span>`:esc(r.rin||"")}</td><td class="n">${esc(r.clean||r.raw||"")}</td><td class="n">${esc(r.map||"")}</td><td class="mono">${esc(r.sra||"")}</td></tr>`}).join("")}
+      </tbody></table></div><p class="ref">RIN 7'nin altı kırmızı işaretlenir.</p>`:`<div class="empty">Henüz RNA-seq bireyi işaretlenmedi. Birey kartındaki RNA-seq bölümünden ya da "öner" ile seç.</div>`}
+    </div>
+    <div class="card stack"><h3>qRT-PCR doğrulama (2<sup>−ΔΔCt</sup>, kontrol: ${esc(gname(ST.config.ctrl))})</h3>
+      ${q.length?`<div class="tablewrap"><table class="t"><thead><tr><th>Gen</th>${gs.map(g=>`<th class="n">ΔCt ${esc(gname(g))}</th>`).join("")}<th class="n">ΔΔCt</th><th class="n">Kat değişim</th></tr></thead><tbody>${q.map(r=>`<tr><td class="mono">${esc(r.gene)}</td>${gs.map(g=>`<td class="n">${fmt(r.d[g],2)} <span class="muted">(${r.n[g]||0})</span></td>`).join("")}<td class="n">${fmt(r.dd,2)}</td><td class="n"><b>${fmt(r.fc,2)}</b></td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">Ct değerleri birey kartlarındaki RNA-seq bölümüne girilince özet burada hesaplanır.</p>`}
+    </div>
+    <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Farklı ifade edilen genler (DESeq2)</h3><button class="btn" id="degUp">CSV yükle</button></div>
+      <p class="small muted">DESeq2 <span class="mono">results()</span> tablosunu CSV olarak yükle (sütunlar: gen adı, <span class="mono">log2FoldChange</span>, <span class="mono">padj</span>). Eşik: FDR &lt; 0,05 ve |log2FC| ≥ 1. Aday gen paneli Ayarlar'dan değiştirilir.</p>
+      <div id="degBox">${ST.rna?.file?`<p class="muted small">Yükleniyor: ${esc(ST.rna.file)}</p>`:`<div class="empty">Dizileme sonuçları gelince buraya yüklenecek.</div>`}</div>
+    </div>
+  </section>`;
+}
+function qpcrSummary(rb){
+  const by={};rb.forEach(b=>(b.rnaseq?.qpcr||[]).forEach(x=>{const ct=num(x.ct),rf=num(x.ref);if(!x.gene||ct==null||rf==null)return;const g=up(x.gene);by[g]=by[g]||{};(by[g][b.geno]=by[g][b.geno]||[]).push(ct-rf)}));
+  const c=ST.config.ctrl,gs=Object.keys(G()),o=gs.find(g=>g!==c);
+  return Object.entries(by).map(([gene,v])=>{const d={},n={};gs.forEach(g=>{d[g]=mean(v[g]||[]);n[g]=(v[g]||[]).length});const dd=d[o]!=null&&d[c]!=null?d[o]-d[c]:null;return {gene,d,n,dd,fc:dd!=null?Math.pow(2,-dd):null}});
+}
+function parseCSV(t){
+  t=t.replace(/^﻿/,"");const first=t.split("\n")[0];const sep=first.includes("\t")?"\t":first.includes(";")&&!first.includes(",")?";":",";
+  const rows=[];let r=[],f="",q=false;
+  for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else if(c==='"')q=true;else if(c===sep){r.push(f);f=""}else if(c==="\n"){r.push(f);rows.push(r);r=[];f=""}else if(c!=="\r")f+=c}
+  if(f||r.length){r.push(f);rows.push(r)}return rows;
+}
+function degFromText(t){
+  const rows=parseCSV(t);if(rows.length<2)return {error:"Dosyada satır yok"};const h=rows[0].map(x=>x.trim().toLowerCase());
+  const ix=n=>h.findIndex(x=>n.includes(x));
+  const gi=Math.max(0,ix(["gene","symbol","gene_name","genename","external_gene_name","gen",""]));
+  const li=ix(["log2foldchange","log2fc","logfc"]),pi=ix(["padj","fdr","qvalue","adj.p.val"]);
+  if(li<0||pi<0)return {error:"log2FoldChange ve padj sütunları bulunamadı"};
+  return rows.slice(1).map(r=>({g:(r[gi]||"").trim(),l:num(r[li]),p:num(r[pi])})).filter(x=>x.g&&x.l!=null);
+}
+function degHTML(d){
+  if(!d)return "";if(d.error)return `<div class="banner">${esc(d.error)}</div>`;
+  const sig=d.filter(x=>x.p!=null&&x.p<0.05&&Math.abs(x.l)>=1),upN=sig.filter(x=>x.l>0).length,dn=sig.length-upN;
+  const cand=candList(),cmap={};d.forEach(x=>{const k=up(x.g);if(cand.includes(k))cmap[k]=x});
+  const w=Math.max(300,Math.min(700,($("#main")?.clientWidth||680)-34)),h=300,pad={l:44,r:12,t:12,b:32};
+  const xm=Math.max(2,...d.map(x=>Math.abs(x.l)).filter(isFinite).sort((a,b)=>b-a).slice(0,5));
+  const yv=x=>x.p==null?0:Math.min(60,-Math.log10(Math.max(x.p,1e-300)));const ym=Math.max(5,...d.map(yv));
+  const X=v=>pad.l+(v+xm)/(2*xm)*(w-pad.l-pad.r),Y=v=>h-pad.b-v/ym*(h-pad.t-pad.b);
+  const sigSet=new Set(sig);const ns=d.filter(x=>!sigSet.has(x));const sample=ns.length>3000?ns.filter((_,i)=>i%Math.ceil(ns.length/3000)===0):ns;
+  const mut=cssv("--line"),upc=cssv("--bad"),dnc=cssv("--accent"),ac=cssv("--fg");
+  let s=`<g class="grid"><line x1="${X(-1)}" x2="${X(-1)}" y1="${pad.t}" y2="${h-pad.b}" stroke-dasharray="3 3"/><line x1="${X(1)}" x2="${X(1)}" y1="${pad.t}" y2="${h-pad.b}" stroke-dasharray="3 3"/><line x1="${pad.l}" x2="${w-pad.r}" y1="${Y(-Math.log10(0.05))}" y2="${Y(-Math.log10(0.05))}" stroke-dasharray="3 3"/></g>`;
+  sample.forEach(x=>s+=`<circle cx="${X(x.l).toFixed(1)}" cy="${Y(yv(x)).toFixed(1)}" r="1.6" fill="${mut}"/>`);
+  sig.forEach(x=>s+=`<circle cx="${X(x.l).toFixed(1)}" cy="${Y(yv(x)).toFixed(1)}" r="2.2" fill="${x.l>0?upc:dnc}" fill-opacity=".75"/>`);
+  Object.values(cmap).forEach(x=>s+=`<circle cx="${X(x.l)}" cy="${Y(yv(x))}" r="4" fill="none" stroke="${ac}" stroke-width="1.5"/><text x="${X(x.l)+6}" y="${Y(yv(x))-4}" style="fill:${ac};font-size:11px">${esc(x.g)}</text>`);
+  for(let v=-Math.floor(xm);v<=xm;v+=Math.max(1,Math.round(xm/4)))s+=`<text x="${X(v)}" y="${h-12}" text-anchor="middle">${v}</text>`;
+  s+=`<text x="${w-pad.r}" y="${h-12}" text-anchor="end" style="font-size:11px">log2FC</text><text x="6" y="${pad.t+8}" style="font-size:11px">−log10 padj</text>`;
+  const other=gname(Object.keys(G()).find(g=>g!==ST.config.ctrl));
+  return `<div class="kpis"><div class="kpi"><div class="v">${fmt(d.length)}</div><div class="l">test edilen gen</div></div><div class="kpi"><div class="v" style="color:var(--bad)">${fmt(upN)}</div><div class="l">artan (${esc(other)} yönünde)</div></div><div class="kpi"><div class="v" style="color:var(--accent)">${fmt(dn)}</div><div class="l">azalan</div></div></div>
+  <svg class="chart" viewBox="0 0 ${w} ${h}" width="100%">${s}</svg>
+  <p class="ref">Yön, DESeq2 kontrastına bağlıdır; <span class="mono">results(dds, contrast=c("genotip","RS","AT"))</span> gibi kontrastı kendin doğrula.</p>
+  <div class="tablewrap"><table class="t"><thead><tr><th>Aday gen</th><th class="n">log2FC</th><th class="n">padj</th><th>Durum</th></tr></thead><tbody>${cand.map(c=>{const x=cmap[c];return `<tr><td class="mono">${esc(c)}</td><td class="n">${x?fmt(x.l,2):"—"}</td><td class="n">${x&&x.p!=null?x.p.toExponential(2):"—"}</td><td>${!x?`<span class="pill">tabloda yok</span>`:x.p!=null&&x.p<0.05&&Math.abs(x.l)>=1?`<span class="pill ${x.l>0?"bad":"ok"}">${x.l>0?"artan":"azalan"}</span>`:`<span class="pill">anlamsız</span>`}</td></tr>`}).join("")}</tbody></table></div>`;
+}
+BIND.rna=()=>{
+  document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open,"rna"));
+  $("#suggest").onclick=suggestRna;
+  $("#degUp").onclick=async()=>{
+    const f=await pickFile("#fileAny",".csv,.tsv,.txt,text/csv");if(!f)return;const t=await f.text();const d=degFromText(t);if(d.error){toast(d.error);return}
+    DEG=d;$("#degBox").innerHTML=degHTML(d);
+    let ref=null;
+    if(ST.mode==="db"){try{ref=await Store.putFile(new Blob([t],{type:"text/csv"}),`deg/${uid()}.csv`,"text/csv")}catch(e){toast("Dosya yüklenemedi; yalnızca bu görünümde")}}
+    else if(ST.mode==="local"){ref="local:"+uid();await IDB.put(ref,t)}
+    if(ref)await Store.patch("rna/deg",{file:f.name,asset:ref,at:new Date().toISOString()});
+  };
+  if(DEG)$("#degBox").innerHTML=degHTML(DEG)+`<p class="ref">${esc(ST.rna.file||"")}</p>`;
+  else if(ST.rna?.asset){const a=ST.rna.asset;(a.startsWith("local:")?IDB.get(a):fetch(photoSrc(a)).then(r=>r.ok?r.text():null)).then(t=>{if(!t)return;DEG=degFromText(t);const b=$("#degBox");if(b)b.innerHTML=degHTML(DEG)+`<p class="ref">${esc(ST.rna.file||"")}</p>`}).catch(()=>{})}
+};
+function suggestRna(){
+  const gs=Object.keys(G()),last=days().slice(-1)[0],pick=[];
+  gs.forEach(g=>{
+    const pool=birdList().filter(b=>b.geno===g&&b.sex==="erkek"&&b.status!=="öldü").map(b=>({b,w:num(b.slaughter?.fastedW)??wOf(b,last)})).filter(x=>x.w!=null);
+    const md=median(pool.map(x=>x.w));pool.sort((a,b)=>Math.abs(a.w-md)-Math.abs(b.w-md));
+    const used=new Set(),sel=[];
+    for(const x of pool){if(sel.length>=4)break;if(!used.has(x.b.pen)){sel.push(x);used.add(x.b.pen)}}
+    for(const x of pool){if(sel.length>=4)break;if(!sel.includes(x))sel.push(x)}
+    pick.push({g,md,sel});
+  });
+  const any=pick.some(p=>p.sel.length);
+  dlg(`<h3>Önerilen RNA-seq bireyleri</h3>${any?pick.map(p=>`<p><b>${esc(gname(p.g))}</b>, medyan ${fmt(p.md)} g<br>${p.sel.map(x=>`<span class="tag ${esc(p.g)}">${esc(x.b.id)}</span> <span class="small muted">${fmt(x.w)} g · Kümes ${esc(x.b.pen)}</span>`).join("<br>")}</p>`).join(""):`<p class="muted">Cinsiyeti "erkek" girilmiş ve son günü tartılmış birey yok.</p>`}`,
+  any?async()=>{for(const p of pick)for(const x of p.sel)await Store.patch("birds/"+x.b.id,{rna:true});toast("RNA-seq bireyleri işaretlendi");render()}:null,"Bu bireyleri işaretle");
+}
+
+/* ============ AYARLAR ============ */
+function feRow(grp,f){
+  const t=ftype(f);
+  return `<tr data-k="${esc(f.k)}"><td><input type="checkbox" data-p="on" ${f.on!==false?"checked":""} aria-label="Açık"></td>${grp==="meat"?`<td><input class="i" data-p="g" value="${esc(f.g||"")}"></td>`:""}<td><input class="i" data-p="l" value="${esc(f.l)}" placeholder="Ölçümün adı"></td><td><input class="i" data-p="u" value="${esc(f.u||"")}" style="min-width:70px"></td>
+  <td><select class="i" data-p="t"><option value="num" ${t==="num"?"selected":""}>Sayı</option><option value="score" ${t==="score"?"selected":""}>Skor (liste)</option><option value="text" ${t==="text"?"selected":""}>Metin</option></select></td>
+  <td><input class="i mono" data-p="opts" value="${esc((f.opts||[]).join(", "))}" placeholder="0, 1, 2"></td><td><input class="i" data-p="ref" value="${esc(f.ref||"")}"></td>
+  <td><button class="btn ghost" data-mv="-1" type="button" aria-label="Yukarı taşı">↑</button><button class="btn ghost" data-mv="1" type="button" aria-label="Aşağı taşı">↓</button>${f.custom?`<button class="btn ghost" data-fedel type="button" style="color:var(--bad)">Sil</button>`:""}</td></tr>`;
+}
+function fieldEditor(grp){
+  const l=FL(grp);
+  return `<details class="sec" id="fe-${grp}" ${ST.openFE===grp?"open":""}><summary>${esc(GROUPS[grp])} <span class="pill">${l.filter(f=>f.on!==false).length}/${l.length} açık</span></summary><div class="body" data-form="fe-${grp}">
+    <p class="small muted">Adı, birimi ve türü düzeltebilir, sırasını değiştirebilir, kapatabilir ya da yeni ölçüm ekleyebilirsin. Ad değişse de girilmiş veriler korunur. Hazır ölçümler silinmez, kapatılır.</p>
+    <div class="tablewrap"><table class="t fe" id="fet-${grp}"><thead><tr><th>Açık</th>${grp==="meat"?"<th>Alt başlık</th>":""}<th>Ad</th><th>Birim</th><th>Tür</th><th>Skor seçenekleri</th><th>Kaynak / not</th><th></th></tr></thead><tbody>${l.map(f=>feRow(grp,f)).join("")}</tbody></table></div>
+    <div class="row"><button class="btn" data-feadd="${grp}" type="button">Ölçüm ekle</button><button class="btn primary" data-fesave="${grp}" type="button">Kaydet</button><button class="btn ghost" data-ferst="${grp}" type="button">Varsayılana dön</button></div>
+  </div></details>`;
+}
+function readFE(grp){
+  const old=FL(grp);
+  return [...document.querySelectorAll(`#fet-${grp} tbody tr`)].map(tr=>{
+    const k=tr.dataset.k,o=clone(old.find(f=>f.k===k)||{k,custom:true});
+    const g=p=>tr.querySelector(`[data-p="${p}"]`);
+    o.on=g("on").checked;o.l=g("l").value.trim()||"Adsız ölçüm";o.u=g("u").value.trim();o.ref=g("ref").value.trim();
+    if(g("g"))o.g=g("g").value.trim()||"Diğer";
+    const t=g("t").value;
+    if(t==="score"){o.opts=g("opts").value.split(/[;,]+/).map(s=>s.trim()).filter(Boolean).map(s=>{const n=num(s);return n!=null&&/^-?\d+([.,]\d+)?$/.test(s)?n:s});if(!o.opts.length)o.opts=[0,1,2,3];delete o.t}
+    else{delete o.opts;if(t==="text")o.t="text";else delete o.t}
+    if(!o.u)delete o.u;if(!o.ref)delete o.ref;
+    return o;
+  });
+}
+function viewSettings(){
+  const c=ST.config,n=birdList().length,gs=Object.keys(G()),pc=Number(c.penCount)||6;
+  const first=birdList()[0];
+  return `<section class="stack">
+  <h2>Ayarlar</h2>
+  <div class="card stack" data-form="cfg"><h3>Deneme</h3>
+    <div class="fgrid">
+      <label class="f" style="grid-column:1/-1"><span>Deneme adı</span><input class="i" id="c_trial" value="${esc(c.trial)}"></label>
+      <label class="f"><span>Civciv yerleştirme (0. gün)</span><input class="i" type="date" id="c_start" value="${esc(c.startDate||"")}"></label>
+      <label class="f"><span>Tartım günleri</span><input class="i mono" id="c_days" value="${esc(days().join(", "))}"></label>
+      <label class="f"><span>Kümes sayısı</span><input class="i num" id="c_pens" inputmode="numeric" value="${pc}"></label>
+      ${gs.map(g=>`<label class="f"><span>${esc(g)} kodlu genotipin adı</span><input class="i" id="c_g_${esc(g)}" value="${esc(gname(g))}"></label>`).join("")}
+      <label class="f"><span>qPCR kontrol grubu</span><select class="i" id="c_ctrl">${gs.map(g=>`<option value="${esc(g)}" ${c.ctrl===g?"selected":""}>${esc(gname(g))}</option>`).join("")}</select></label>
+      <label class="f"><span>qPCR referans gen</span><input class="i mono" id="c_ref" value="${esc(c.refGene)}"></label>
+      <label class="f" style="grid-column:1/-1"><span>Halka durumu seçenekleri (virgülle)</span><input class="i" id="c_band" value="${esc(c.bandOpts||"")}"></label>
+      <label class="f" style="grid-column:1/-1"><span>Aday gen paneli (virgülle)</span><textarea class="i mono" id="c_cand" rows="2">${esc(candList().join(", "))}</textarea></label>
+    </div>
+    <div class="sub">Hedef canlı ağırlık eğrileri (g)</div>
+    <div class="tablewrap"><table class="t"><thead><tr><th>Genotip</th>${days().map(d=>`<th>${d}. gün</th>`).join("")}</tr></thead><tbody>${gs.map(g=>`<tr><td>${esc(gname(g))}</td>${days().map(d=>`<td><input class="i num" data-tg="${esc(g)}:${d}" inputmode="decimal" value="${esc(c.targets?.[g]?.[d]??"")}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    <p class="ref">Varsayılan değerler tez önerisindeki Cobb500 (2022) tablosu ve Anadolu-T için 42. gün ≈ 2790 g'dır. Ross 308 hedefleriyle güncelle.</p>
+    <div class="row"><button class="btn primary" id="saveCfg">Deneme ayarlarını kaydet</button></div>
+  </div>
+
+  <div class="card stack"><h3>Ölçümler (trait listesi)</h3>
+    ${Object.keys(GROUPS).map(fieldEditor).join("")}
+  </div>
+
+  <div class="card stack"><h3>Bireyler ve QR etiketleri</h3>
+    ${n?`<p class="small">${n} birey kayıtlı: ${gs.map(g=>`${esc(gname(g))} ${birdList().filter(b=>b.geno===g).length}`).join(" · ")}. Tek bir bireyin kimliğini düzeltmek için Bireyler sekmesinde satıra dokun, sonra "Kimliği düzenle".</p>`:""}
+    <p class="small muted">Her kümese bir genotip ve birey sayısı ver. Kimlikler genotip başına sıralı verilir (AT001…, RS001…). Kümesleri genotiplere deneme planına göre önceden rastgele ata.</p>
+    <div class="tablewrap"><table class="t"><thead><tr><th>Kümes</th><th>Genotip</th><th>Birey sayısı</th></tr></thead><tbody>
+      ${Array.from({length:pc},(_,i)=>i+1).map(p=>`<tr><td>${p}</td><td><select class="i" id="sp_g${p}">${gs.map(g=>`<option value="${esc(g)}" ${(penGeno(p)||(p<=Math.ceil(pc/2)?gs[1]||gs[0]:gs[0]))===g?"selected":""}>${esc(gname(g))}</option>`).join("")}</select></td><td><input class="i num" id="sp_n${p}" inputmode="numeric" value="${penBirds(p).length||40}"></td></tr>`).join("")}
+    </tbody></table></div>
+    <div class="row"><button class="btn ${n?"":"primary"}" id="mkBirds">${n?"Eksik bireyleri ekle":"Bireyleri oluştur"}</button><button class="btn" id="impBirds">Listeden içe aktar (CSV)</button></div>
+
+    <div class="sub">QR etiketi</div>
+    <div class="seg" role="group"><button data-qm="url" aria-pressed="${c.qrMode!=="id"}">Bağlantılı (önerilen)</button><button data-qm="id" aria-pressed="${c.qrMode==="id"}">Yalnız numara</button></div>
+    ${c.qrMode!=="id"?`<ol class="steps"><li>QR, bu sayfanın bağlantısını ve bireyin numarasını taşır.</li><li>Telefonun kendi kamerasını aç, QR'a tut, çıkan bağlantıya dokun: PiliçTakip o bireyin kartıyla açılır.</li><li>Açılan sayfada "Ziyaretçi" ya da "Kullanıcı" seçilir. Sayfayı ana ekrana eklersen (Paylaş → Ana Ekrana Ekle) daha hızlı açılır.</li><li>Etiket en az 15 mm olmalı; 16–18 mm rahat okunur.</li></ol>
+    ${SITE_URL?`<p class="small">QR'lardaki bağlantı: <span class="mono" style="word-break:break-all">${esc(SITE_URL)}</span></p>`:`<p class="banner">Bu sayfa henüz internette yayında değil. QR'ları sayfa yayınlandıktan sonra, yayındaki adresten bas.</p>`}`:`<p class="ref">Yalnız numara: kod küçük kalır (12 mm yeter) ama telefon kamerası kartı açmaz; Okut sekmesindeki "Etiketin fotoğrafını çek" düğmesi gerekir.</p>`}
+    <div class="row"><label class="f" style="width:150px"><span>QR boyutu (mm)</span><input class="i num" id="qrSize" value="${c.qrMode!=="id"?16:12}" inputmode="decimal"></label><button class="btn primary" id="pdfBtn" ${n?"":"disabled"}>Etiket sayfasını indir (PDF)</button></div>
+    ${first?`<div class="row"><div style="width:110px;border-radius:6px;overflow:hidden">${qrSVG(qrText(first.id))}</div><span class="small muted">Örnek: ${esc(first.id)}<br><span class="mono" style="word-break:break-all">${esc(qrText(first.id))}</span></span></div>`:""}
+  </div>
+
+  <div class="card stack"><h3>Dışa aktar ve yedek</h3>
+    <p class="small muted">Excel dosyası R ve SPSS için uzun formattadır: her satır bir birey × gün. Fotoğraflar ZIP içinde genotip klasörlerinde, <span class="mono">AT017_21gün_üst.jpg</span> adıyla gelir.</p>
+    <div class="row"><button class="btn primary" id="xlsxBtn" ${n?"":"disabled"}>Excel'e aktar</button><button class="btn" id="zipBtn" ${n?"":"disabled"}>Fotoğrafları indir (ZIP)</button><button class="btn" id="jsonBtn" ${n?"":"disabled"}>Tam yedek (JSON)</button><button class="btn" id="jsonIn">Yedekten geri yükle</button></div>
+  </div>
+  <div class="card stack"><h3>Hesap</h3><p class="small muted">${ST.mode==="db"?`Kullanıcı olarak giriş yapıldı. Ziyaretçiler yalnızca birey kimliğini, fotoğrafları ve girilmiş verileri görür; kayıt giremez.`:`Veritabanı bağlantısı kurulmadı; KURULUM.md dosyasındaki adımları izle.`}</p><div class="row"><button class="btn" id="logoutBtn">Çıkış yap</button><button class="btn" id="asVisitor">Ziyaretçi görünümüne bak</button></div></div>
+  <div class="card stack"><h3>Örnek veri</h3><p class="small muted">240 bireylik benzetilmiş bir denemeyle tüm ekranları dene. Örnek veri kaydedilmez; çıkınca gerçek verin aynen döner.</p><div class="row"><button class="btn" id="demoBtn">Örnek veriyle dene</button></div></div>
+  </section>`;
+}
+BIND.ayar=()=>{
+  $("#saveCfg").onclick=async()=>{
+    const ds=val("c_days").split(/[,\s;]+/).map(Number).filter(x=>isFinite(x)&&x>=0);
+    const c={trial:val("c_trial"),startDate:val("c_start"),days:[...new Set(ds)].sort((a,b)=>a-b),penCount:Math.max(1,Math.min(50,parseInt(val("c_pens"))||6)),geno:{},ctrl:val("c_ctrl"),refGene:val("c_ref"),bandOpts:val("c_band"),cand:val("c_cand"),targets:{}};
+    Object.keys(G()).forEach(g=>c.geno[g]=val("c_g_"+g)||g);
+    document.querySelectorAll("[data-tg]").forEach(x=>{const [g,d]=x.dataset.tg.split(":");(c.targets[g]=c.targets[g]||{})[d]=num(x.value)});
+    ST.config.days=c.days;ST.config.targets={};
+    if(await Store.patch("config/main",c)){clearDirty("cfg");toast("Deneme ayarları kaydedildi");render()}
+  };
+  Object.keys(GROUPS).forEach(grp=>{
+    const tb=$(`#fet-${grp} tbody`),form=()=>tb.closest("[data-form]");
+    const bindRows=()=>{
+      tb.querySelectorAll("[data-mv]").forEach(b=>b.onclick=()=>{const tr=b.closest("tr");const dir=Number(b.dataset.mv);if(dir<0&&tr.previousElementSibling)tr.parentNode.insertBefore(tr,tr.previousElementSibling);if(dir>0&&tr.nextElementSibling)tr.parentNode.insertBefore(tr.nextElementSibling,tr);form().dataset.dirty="1"});
+      tb.querySelectorAll("[data-fedel]").forEach(b=>b.onclick=()=>{b.closest("tr").remove();form().dataset.dirty="1"});
+    };
+    bindRows();
+    document.querySelector(`[data-feadd="${grp}"]`).onclick=()=>{const last=FL(grp).slice(-1)[0];tb.insertAdjacentHTML("beforeend",feRow(grp,{k:"c"+uid(),l:"",custom:true,on:true,g:grp==="meat"?(last?.g||"Diğer"):undefined}));bindRows();tb.lastElementChild.querySelector('[data-p="l"]').focus();form().dataset.dirty="1"};
+    document.querySelector(`[data-fesave="${grp}"]`).onclick=async()=>{const arr=readFE(grp);ST.openFE=grp;if(await Store.patch("config/main",{fields:{[grp]:arr}})){clearDirty("fe-"+grp);toast(GROUPS[grp]+" kaydedildi");render()}};
+    document.querySelector(`[data-ferst="${grp}"]`).onclick=()=>dlg(`<h3>${esc(GROUPS[grp])} varsayılana dönsün mü?</h3><p class="small">Adlar ve sıra ilk hâline döner, eklediğin ölçümler listeden çıkar. Girilmiş veriler silinmez.</p>`,async()=>{ST.openFE=grp;await Store.patch("config/main",{fields:{[grp]:defaultFields(grp)}});clearDirty("fe-"+grp);toast("Varsayılana dönüldü");render()},"Varsayılana dön",true);
+  });
+  document.querySelectorAll("[data-qm]").forEach(b=>b.onclick=async()=>{await Store.patch("config/main",{qrMode:b.dataset.qm});render()});
+  $("#mkBirds").onclick=makeBirds;$("#impBirds").onclick=importBirds;$("#pdfBtn").onclick=labelPDF;
+  $("#xlsxBtn").onclick=exportXLSX;$("#zipBtn").onclick=exportZIP;$("#jsonBtn").onclick=exportJSON;$("#jsonIn").onclick=importJSON;
+  $("#demoBtn").onclick=loadDemo;
+  $("#logoutBtn").onclick=logout;
+  $("#asVisitor").onclick=()=>{ST.role="visitor";ST.canWrite=false;ST.cur=null;render()};
+};
+async function makeBirds(){
+  const add={},cnt={},pc=Number(ST.config.penCount)||6;
+  birdList().forEach(b=>{const k=parseInt(b.id.replace(/^\D+/,""));if(isFinite(k))cnt[b.geno]=Math.max(cnt[b.geno]||0,k)});
+  for(let p=1;p<=pc;p++){const g=val("sp_g"+p),n=parseInt(val("sp_n"+p))||0;const have=penBirds(p).length;
+    for(let i=have;i<n;i++){cnt[g]=(cnt[g]||0)+1;const id=g+String(cnt[g]).padStart(3,"0");add[id]={id,geno:g,pen:p,sex:"",status:"aktif",wing:"",weeks:{},created:new Date().toISOString()}}}
+  const k=Object.keys(add).length;if(!k){toast("Eklenecek birey yok");return}
+  dlg(`<h3>${k} birey oluşturulacak</h3><p>${Object.keys(G()).map(g=>`${esc(gname(g))}: ${Object.values(add).filter(b=>b.geno===g).length}`).join(" · ")}</p><p class="small muted">Sonra etiket sayfasını PDF olarak indirip basabilirsin.</p>`,async()=>{toast("Oluşturuluyor…",8000);await Store.bulkSet("birds",add);toast(`${k} birey oluşturuldu`);render()},"Oluştur");
+}
+async function importBirds(){
+  const f=await pickFile("#fileAny",".csv,.txt,text/csv");if(!f)return;const rows=parseCSV(await f.text());const h=rows[0].map(x=>x.trim().toLocaleLowerCase("tr-TR"));
+  const ix=n=>h.findIndex(x=>n.includes(x));const ii=ix(["id","kimlik","kod","numara"]),gi=ix(["genotip","genotype","geno"]),pi=ix(["kümes","kumes","pen","bölme"]),wi=ix(["kanat","kanat no","wing"]),si=ix(["cinsiyet","sex"]);
+  if(ii<0){toast("CSV'de 'kimlik' sütunu yok");return}
+  const add={};rows.slice(1).forEach(r=>{const id=normId(r[ii]);if(!id)return;const g=up((gi>=0?r[gi]:id.slice(0,2))||"").trim().slice(0,2);add[id]=deepMerge(clone(ST.birds[id]||{weeks:{},status:"aktif"}),{id,geno:g,pen:Number(r[pi])||"",wing:wi>=0?r[wi]:"",sex:si>=0?(r[si]||"").toLocaleLowerCase("tr-TR"):""})});
+  dlg(`<h3>${Object.keys(add).length} birey içe aktarılacak</h3><p class="small muted">Var olan bireylerin kimlik bilgisi güncellenir, ölçümleri korunur.</p>`,async()=>{await Store.bulkSet("birds",add);toast("İçe aktarıldı");render()},"İçe aktar");
+}
+async function saveFile(name,data){
+  if(DL){try{await DL.save({filename:name,data});toast(name+" indirildi")}catch(e){if(e.code!=="declined")toast("İndirilemedi: "+(e.message||e.code))}return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data]));a.download=name;document.body.appendChild(a);a.click();a.remove();
+}
+async function labelPDF(){
+  toast("PDF hazırlanıyor…",8000);await loadScript(LIB.pdf);
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});
+  const qs=num(val("qrSize"))||16,cw=Math.max(32,qs+22),ch=qs+6,mx=10,my=10,cols=Math.floor((210-2*mx)/cw),rows=Math.floor((297-2*my)/ch);
+  let i=0;
+  for(const b of birdList()){
+    if(i&&i%(cols*rows)===0)doc.addPage();
+    const k=i%(cols*rows),x=mx+(k%cols)*cw,y=my+Math.floor(k/cols)*ch;
+    const q=qrObj(qrText(b.id)),n=q.getModuleCount(),m=qs/(n+4);
+    doc.setDrawColor(200);doc.rect(x,y,cw-1,ch-1);
+    doc.setFillColor(0,0,0);
+    for(let r=0;r<n;r++){let c=0;while(c<n){if(!q.isDark(r,c)){c++;continue}let e=c;while(e<n&&q.isDark(r,e))e++;doc.rect(x+1+(c+2)*m,y+2+(r+2)*m,(e-c)*m+0.01,m+0.01,"F");c=e}}
+    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text(b.id,x+qs+3,y+ch/2);
+    doc.setFont("helvetica","normal");doc.setFontSize(6.5);doc.text("Kümes "+b.pen,x+qs+3,y+ch/2+3.5);
+    i++;
+  }
+  await saveFile("QR_etiketleri.pdf",doc.output("blob"));
+}
+const photoName=(b,d,t)=>`${b.id}_${d}gün_${t}.jpg`;
+function longRows(){
+  const ex=FON("weekly");const out=[];
+  birdList().forEach(b=>days().forEach(d=>{const w=b.weeks?.["d"+d];if(!w)return;const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Gün":d,"Tarih":trDate(w.date),"Canlı ağırlık (g)":num(w.w)};ex.forEach(m=>r[flabel(m)]=ftype(m)==="text"?(w[m.k]||""):num(w[m.k]));r["Halka durumu"]=w.band||"";r["Üstten fotoğraf"]=w.top?photoName(b,d,"üst"):"";r["Yandan fotoğraf"]=w.side?photoName(b,d,"yan"):"";r["Not"]=w.note||"";out.push(r)}));
+  return out;
+}
+async function exportXLSX(){
+  toast("Excel hazırlanıyor…",8000);await loadScript(LIB.xlsx);const X=window.XLSX,wb=X.utils.book_new();
+  const add=(n,rows)=>X.utils.book_append_sheet(wb,X.utils.json_to_sheet(rows.length?rows:[{"Kayıt yok":""}]),n);
+  add("Bireyler",birdList().map(b=>({"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Kanat no":b.wing||"","Cinsiyet":b.sex||"","Durum":b.status||"aktif","Ölüm günü":b.deathDay??"","Ölüm ağırlığı (g)":b.deathW??"","Ölüm nedeni":b.deathCause||"","RNA-seq":b.rna?"evet":""})));
+  add("Haftalık",longRows());
+  const pr=[];penIds().forEach(p=>penStats(p).forEach(r=>pr.push({"Kümes":p,"Genotip":gname(penGeno(p)),"Gün":r.d,"Tartılan":r.n,"Canlı":r.alive,"Ort. ağırlık (g)":r.mean,"CV (%)":r.cv,"Günlük artış (g)":r.adg,"Biyokütle (g)":r.bio,"Tüketilen yem (g)":r.feed,"Ölü":r.deadN,"Ölü ağırlığı (g)":r.deadW,"FCR dönem":r.fcr,"FCR kümülatif":r.cfcr,"Sıcaklık (°C)":num(r.wk.temp),"Nem (%)":num(r.wk.rh)})));
+  add("Kümes FCR",pr);
+  add("Kesim",birdList().filter(b=>b.slaughter).map(b=>{const c=sCalc(b.slaughter);const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Kesim tarihi":trDate(b.slaughter.date)};FL("slaughter").forEach(m=>r[flabel(m)]=ftype(m)==="text"?(b.slaughter[m.k]||""):num(b.slaughter[m.k]));Object.assign(r,{"Karkas randımanı (%)":c.yield,"Göğüs eti / karkas (%)":c.breast,"But / karkas (%)":c.thigh,"Abdominal yağ / canlı ağırlık (%)":c.fat});return r}));
+  add("Et kalitesi",birdList().filter(b=>b.meat).map(b=>{const c=mCalc(b.meat);const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||""};FL("meat").forEach(f=>r[(f.g?f.g+": ":"")+flabel(f)]=ftype(f)==="text"?(b.meat[f.k]||""):num(b.meat[f.k]));r["Drip loss (%)"]=c.drip;r["Cooking loss (%)"]=c.cook;return r}));
+  add("RNA-seq",birdList().filter(b=>b.rna||b.rnaseq).map(b=>{const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Seçildi":b.rna?"evet":""};FL("rna").forEach(f=>r[flabel(f)]=ftype(f)==="text"?(b.rnaseq?.[f.k]||""):num(b.rnaseq?.[f.k]));return r}));
+  const q=[];birdList().forEach(b=>(b.rnaseq?.qpcr||[]).forEach(x=>q.push({"Kimlik":b.id,"Genotip":gname(b.geno),"Gen":x.gene,"Hedef Ct":num(x.ct),"Referans Ct":num(x.ref),"ΔCt":num(x.ct)!=null&&num(x.ref)!=null?num(x.ct)-num(x.ref):null})));add("qPCR",q);
+  const buf=X.write(wb,{type:"array",bookType:"xlsx"});
+  await saveFile(`PiliçTakip_${todayISO()}.xlsx`,new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+}
+async function exportZIP(){
+  await loadScript(LIB.zip);const z=new window.JSZip();let n=0,fail=0;
+  const jobs=[];birdList().forEach(b=>Object.entries(b.weeks||{}).forEach(([dk,w])=>[["top","üst"],["side","yan"]].forEach(([s,t])=>{if(w[s])jobs.push({ref:w[s],name:`${gname(b.geno)}/${photoName(b,dk.slice(1),t)}`})})));
+  if(!jobs.length){toast("Fotoğraf yok");return}
+  for(const j of jobs){
+    toast(`Fotoğraflar toplanıyor ${n+fail+1}/${jobs.length}`,8000);
+    try{let blob=null;const r=j.ref;
+      if(r.startsWith("local:")||r.startsWith("pend:"))blob=await IDB.get(r);
+      else if(r.startsWith("demo:"))blob=new Blob([decodeURIComponent(demoPhoto(r).split(",")[1])],{type:"image/svg+xml"});
+      else if(r.startsWith("mem:"))blob=await (await fetch(r.slice(4))).blob();
+      else{const x=await fetch(photoSrc(r));if(x.ok)blob=await x.blob()}
+      if(blob){z.file(r.startsWith("demo:")?j.name.replace(".jpg",".svg"):j.name,blob);n++}else fail++}catch(e){fail++}
+  }
+  const out=await z.generateAsync({type:"blob"});await saveFile(`PiliçTakip_fotoğraflar_${todayISO()}.zip`,out);if(fail)toast(`${fail} fotoğraf alınamadı`);
+}
+async function exportJSON(){await saveFile(`PiliçTakip_yedek_${todayISO()}.json`,JSON.stringify({v:2,at:new Date().toISOString(),birds:ST.birds,pens:ST.pens,config:ST.config,rna:ST.rna},null,1))}
+async function importJSON(){
+  const f=await pickFile("#fileAny",".json,application/json");if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(e){toast("Geçersiz yedek dosyası");return}
+  if(!d.birds){toast("Yedekte birey verisi yok");return}
+  dlg(`<h3>Yedek geri yüklensin mi?</h3><p>${Object.keys(d.birds).length} birey, ${Object.keys(d.pens||{}).length} kümes kaydı. Aynı kimlikli kayıtların üzerine yazılır.</p>`,async()=>{await Store.bulkSet("birds",d.birds);await Store.bulkSet("pens",d.pens||{});if(d.config)await Store.patch("config/main",d.config);toast("Yedek yüklendi");render()},"Geri yükle",true);
+}
+
+/* ============ GİRİŞ EKRANI ============ */
+function viewGate(){
+  const w=ST.want?.id;
+  return `<section class="gate"><div class="gate-card">
+    <div class="logo">Piliç<b>Takip</b></div>
+    <p class="muted" style="margin:0">${esc(ST.config.trial||"Bireysel kanatlı deneme kaydı")}</p>
+    ${w?`<p style="margin:0">Okutulan birey: <span class="tag ${esc(ST.birds[w]?.geno||"")}">${esc(w)}</span></p>`:""}
+    <button class="btn primary big" id="gVisitor">Ziyaretçi olarak gir</button>
+    <button class="btn big" id="gUser">Kullanıcı olarak gir</button>
+    <form id="gForm" class="stack" hidden autocomplete="on">
+      <input type="text" name="username" autocomplete="username" value="${esc(OWNER_EMAIL)}" hidden>
+      <label class="f"><span>Şifre</span><input class="i" type="password" id="gPw" name="password" inputmode="numeric" autocomplete="current-password" required></label>
+      <button class="btn primary">Giriş yap</button>
+      <p class="small" id="gErr" style="color:var(--bad);margin:0" role="alert"></p>
+    </form>
+    ${ST.mode==="local"?`<p class="ref">Veritabanı bağlantısı kurulmadı; bu cihazdaki kayıtlar gösterilir.</p>`:""}
+  </div></section>`;
+}
+function bindGate(){
+  $("#gVisitor").onclick=()=>{ST.role="visitor";ST.canWrite=false;if(ST.want&&ST.loaded)tryWanted();else render()};
+  $("#gUser").onclick=()=>{
+    if(ST.session||!sb){ST.role="owner";ST.canWrite=true;Store.flush();if(ST.want&&ST.loaded)tryWanted();else render();return}
+    $("#gForm").hidden=false;$("#gUser").hidden=true;$("#gPw").focus();
+  };
+  $("#gForm").onsubmit=async e=>{
+    e.preventDefault();const btn=e.submitter||$("#gForm button");btn.disabled=true;$("#gErr").textContent="";
+    const ok=await login($("#gPw").value).catch(()=>false);
+    btn.disabled=false;
+    if(!ok){$("#gErr").textContent="Şifre yanlış ya da bağlantı yok.";$("#gPw").value="";$("#gPw").focus();return}
+    if(ST.want&&ST.loaded)tryWanted();else render();
+  };
+}
+
+/* ============ ZİYARETÇİ ============ */
+const lastPhoto=b=>{const ds=days().slice().reverse();for(const d of ds){const t=b.weeks?.["d"+d]?.top;if(t)return t}return null};
+const lastW=b=>{const ds=days().slice().reverse();for(const d of ds){const w=wOf(b,d);if(w!=null)return [d,w]}return null};
+function viewVisitorList(){
+  const q=normId(ST.vq||"");let l=birdList();if(q)l=l.filter(b=>b.id.includes(q));
+  if(!birdList().length)return ST.loaded?`<div class="empty">Henüz kayıtlı birey yok.</div>`:`<div class="empty">Kayıtlar yükleniyor…</div>`;
+  return `<section class="stack">
+    <h2>Bireyler</h2>
+    <form class="row" id="vForm"><input class="i mono" id="vq" placeholder="Kimlik ara, örnek: AT017" value="${esc(ST.vq||"")}" autocapitalize="characters" style="flex:1;min-width:160px"><button class="btn primary">Aç</button></form>
+    <div class="vlist">${l.slice(0,300).map((b,i)=>{const p=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,20)*40}ms"><div class="ph">${p?imgTag(p,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}</span><span class="small">${esc(gname(b.geno))} · Kümes ${esc(b.pen)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")}</div>
+  </section>`;
+}
+function bindVisitorList(){
+  const f=$("#vForm");if(!f)return;
+  f.onsubmit=e=>{e.preventDefault();const v=$("#vq").value;if(ST.birds[normId(v)])openBird(v);else{ST.vq=v;render()}};
+  $("#vq").oninput=e=>{ST.vq=e.target.value;clearTimeout(bindVisitorList.t);bindVisitorList.t=setTimeout(()=>{const pos=e.target.selectionStart;render();const q=$("#vq");if(q){q.focus();q.setSelectionRange(pos,pos)}},250)};
+  document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open));
+}
+function viewVisitorBird(b){
+  const ds=days(),ex=FON("weekly"),g=b.geno,st=b.status||"aktif";
+  const col=cssv(g==="AT"?"--at":g==="RS"?"--rs":"--accent"),mut=cssv("--muted");
+  const rec=ds.filter(d=>{const w=b.weeks?.["d"+d];return w&&(num(w.w)!=null||w.top||w.side)});
+  const items=rec.map((d,i)=>{
+    const w=b.weeks["d"+d],cw=num(w.w),pi=ds.indexOf(d),pd=pi>0?ds[pi-1]:null,pw=pd!=null?wOf(b,pd):null;
+    const pen=mean(penBirds(b.pen).map(x=>wOf(x,d)));
+    const rows=[];
+    if(cw!=null)rows.push(["Canlı ağırlık",fmt(cw)+" g"]);
+    if(cw!=null&&pw!=null)rows.push(["Önceki tartımdan",`<span class="gain">+${fmt(cw-pw)} g</span> (${fmt((cw-pw)/(d-pd),1)} g/gün)`]);
+    if(cw!=null&&pen)rows.push(["Kümes ortalaması",fmt(pen)+" g"]);
+    ex.forEach(m=>{const v=w[m.k];if(v!==undefined&&v!==""&&v!=null)rows.push([flabel(m),esc(v)])});
+    return `<article class="wk" style="animation-delay:${i*160}ms">
+      <a class="wk-photo" ${w.top?`href="${esc(photoSrc(w.top))}" target="_blank" rel="noopener"`:""}>${w.top?imgTag(w.top,b.id+" "+d+". gün"):"fotoğraf yok"}</a>
+      <div class="stack" style="gap:8px"><div><div class="wk-day">${d}. gün</div><div class="small muted">${esc(trDate(w.date))}</div></div>
+        <dl class="kv">${rows.map(r=>`<dt>${esc(r[0])}</dt><dd>${r[1]}</dd>`).join("")}</dl>
+        ${w.side?`<a class="wk-side" href="${esc(photoSrc(w.side))}" target="_blank" rel="noopener">${imgTag(w.side,"yandan")}</a>`:""}
+      </div></article>`}).join("");
+  const ws=ds.map(d=>[d,wOf(b,d)]).filter(x=>x[1]!=null);
+  const first=ws[0],last=ws[ws.length-1];
+  const own=ds.map(x=>[x,wOf(b,x)]),pm=ds.map(x=>[x,mean(penBirds(b.pen).map(y=>wOf(y,x)))]);
+  const pl=last?mean(penBirds(b.pen).map(x=>wOf(x,last[0]))):null;
+  const k=[];
+  if(first)k.push([`Başlangıç (${first[0]}. gün)`,fmt(first[1])+" g"]);
+  if(last&&last!==first)k.push([`Son tartım (${last[0]}. gün)`,fmt(last[1])+" g"]);
+  if(first&&last&&last!==first){k.push(["Toplam artış",fmt(last[1]-first[1])+" g"]);k.push(["Ortalama günlük artış",fmt((last[1]-first[1])/(last[0]-first[0]),1)+" g/gün"])}
+  if(last&&pl)k.push(["Kümes ortalamasına göre",(last[1]>=pl?"+":"")+fmt((last[1]/pl-1)*100,1)+" %"]);
+  return `<div class="row"><button class="btn ghost" id="back">← Tüm bireyler</button></div>
+  <section class="card stack"><span class="tag xl ${esc(g)}">${esc(b.id)}</span>
+    <div class="row small"><b>${esc(gname(g))}</b><span>Kümes ${esc(b.pen)}</span><span>Cinsiyet: ${esc(b.sex||"belirsiz")}</span><span class="pill ${st==="aktif"?"ok":st==="öldü"?"bad":""}">${esc(st)}</span></div></section>
+  ${rec.length?`<div class="timeline">${items}</div>`:`<div class="empty">Bu birey için henüz tartım ya da fotoğraf girilmedi.</div>`}
+  <section class="card stack" style="animation:rise .6s both;animation-delay:${rec.length*160}ms"><h3>Genel bilgiler</h3>
+    ${k.length?`<div class="kpis">${k.map(x=>`<div class="kpi"><div class="v">${esc(x[1])}</div><div class="l">${esc(x[0])}</div></div>`).join("")}</div>`:""}
+    ${ws.length>1?lineChart({series:[{pts:pm,color:mut,dash:"6 4"},{pts:own,color:col,dots:1,wd:2.5}]})+`<div class="legend"><span><i style="border-color:${col}"></i>${esc(b.id)}</span><span><i style="border-color:${mut};border-top-style:dashed"></i>Kümes ${esc(b.pen)} ortalaması</span></div>`:""}
+  </section>
+  ${roSections(b)}`;
+}
+function bindVisitorBird(){$("#back").onclick=()=>{ST.cur=null;render();window.scrollTo(0,0)}}
+
+/* ============ örnek veri (yalnızca bellekte) ============ */
+function demoPhoto(ref){
+  const [,id,d]=ref.split(":");const b=ST.birds[id];if(!b)return "";const w=wOf(b,Number(d))||50;const s=Math.sqrt(w/3200);
+  const rx=Math.round(18+70*s),ry=Math.round(13+46*s),col=b.geno==="AT"?"#c9a25a":"#f2efe6";
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150"><rect width="200" height="150" fill="#2c6e9e"/><rect x="8" y="8" width="22" height="22" fill="#fff"/><rect x="12" y="12" width="14" height="14" fill="#000"/><ellipse cx="100" cy="78" rx="${rx}" ry="${ry}" fill="${col}"/><circle cx="${100+rx*0.95}" cy="74" r="${Math.round(6+12*s)}" fill="${col}"/><text x="8" y="142" font-family="sans-serif" font-size="11" fill="#fff">${id} · ${d}. gün</text></svg>`;
+  return "data:image/svg+xml,"+encodeURIComponent(svg);
+}
+function exitDemo(){ST.canWrite=ST._prevMode==="local"||!!ST.session;ST.mode=ST._prevMode;ST.birds=ST._prev.birds;ST.pens=ST._prev.pens;ST.config=ST._prev.config;ST.rna=ST._prev.rna;DEG=null;setView("okut")}
+function loadDemo(){
+  if(ST.mode!=="demo"){ST._prev={birds:ST.birds,pens:ST.pens,config:ST.config,rna:ST.rna};ST._prevMode=ST.mode}
+  const rnd=(()=>{let s=42;return()=>{s=(s*16807)%2147483647;return s/2147483647}})();
+  const gauss=()=>{let u=0;for(let i=0;i<6;i++)u+=rnd();return u-3};
+  const curve={RS:[42,195,540,1080,1750,2450,3150],AT:[40,165,440,880,1420,2050,2760]};
+  const birds={},pens={},ds=DAYS_DEFAULT,start=new Date();start.setDate(start.getDate()-42);
+  const iso=d=>{const x=new Date(start);x.setDate(x.getDate()+d);return x.toISOString().slice(0,10)};
+  [["RS",[1,2,3]],["AT",[4,5,6]]].forEach(([g,ps])=>{let k=0;ps.forEach(p=>{for(let i=0;i<40;i++){k++;const id=g+String(k).padStart(3,"0");const sex=rnd()<0.5?"erkek":"dişi";const f=1+gauss()*0.06+(sex==="erkek"?0.05:-0.05);
+    const b={id,geno:g,pen:p,sex,status:"aktif",wing:String(1000+(g==="RS"?0:200)+k),weeks:{}};
+    const dieAt=rnd()<0.035?ds[1+Math.floor(rnd()*5)]:null;
+    ds.forEach((d,j)=>{if(dieAt!=null&&d>=dieAt)return;const w=Math.round(curve[g][j]*f*(1+gauss()*0.015));
+      const wk={w:String(w),date:iso(d),band:d===14?"Değiştirildi":"Uygun",top:"demo:"+id+":"+d,shankLen:String(Math.round((22+d*1.6)*(g==="RS"?1.05:1))),shankDia:(4.5+d*0.22*(g==="RS"?1.1:1)).toFixed(1),backLen:(5+d*0.33).toFixed(1),backWid:(3+d*0.2*(g==="RS"?1.12:1)).toFixed(1)};
+      if(d>=28){wk.gait=String(Math.min(5,Math.max(0,Math.round((g==="RS"?1.4:0.7)+gauss()*0.8))));wk.fpd=String(Math.min(4,Math.max(0,Math.round((g==="RS"?1:0.5)+gauss()*0.7))));wk.hock=String(Math.max(0,Math.round(0.3+gauss()*0.5)))}
+      b.weeks["d"+d]=wk});
+    if(dieAt!=null){b.status="öldü";b.deathDay=dieAt-1-Math.floor(rnd()*5);b.deathW=Math.round(curve[g][ds.indexOf(dieAt)-1]*f*1.1)}
+    else if(i<10){const fw=Math.round(num(b.weeks.d42.w)*0.97),hc=Math.round(fw*(g==="RS"?0.735:0.715)*(1+gauss()*0.01)),pm=Math.round(hc*(g==="RS"?0.245:0.215)*(1+gauss()*0.04));
+      b.status="kesildi";b.slaughter={date:iso(42),fastedW:String(fw),hotCarc:String(hc),pmaj:String(pm),pmin:String(Math.round(pm*0.21)),thighR:String(Math.round(hc*0.15)),thighL:String(Math.round(hc*0.15)),abdFat:String(Math.round(fw*(g==="RS"?0.015:0.019)))};
+      const d1=25+rnd()*4;b.meat={ph15:(6.3+gauss()*0.08).toFixed(2),phu:((g==="RS"?5.95:5.85)+gauss()*0.06).toFixed(2),L:((g==="RS"?55:52)+gauss()*1.5).toFixed(1),a:(2.5+gauss()*0.6).toFixed(1),b:(11+gauss()*1.2).toFixed(1),dm1:d1.toFixed(2),dm2:(d1*(1-((g==="RS"?0.02:0.015)+rnd()*0.008))).toFixed(2),ws:String(g==="RS"?[0,0.5,1,1,1.5][Math.floor(rnd()*5)]:[0,0,0.5,1][Math.floor(rnd()*4)]),wb:String(g==="RS"?[0,1,1,2][Math.floor(rnd()*4)]:[0,0,1][Math.floor(rnd()*3)])};
+    }
+    birds[id]=b}})});
+  for(let p=1;p<=6;p++){const g=p<=3?"RS":"AT",weeks={};const fc={RS:[0,1.0,1.25,1.45,1.6,1.72,1.82],AT:[0,1.05,1.32,1.55,1.72,1.86,1.98]}[g];
+    ds.forEach((d,j)=>{if(!j)return;const ms=Object.values(birds).filter(b=>b.pen===p);const m1=mean(ms.map(b=>wOf(b,d))),m0=mean(ms.map(b=>wOf(b,ds[j-1])));const gain=(m1-m0)*ms.filter(b=>wOf(b,d)!=null).length/1000;weeks["d"+d]={feed:(gain*fc[j]*1.02+0.4).toFixed(1),left:"0.4",temp:String(33-j*2),rh:String(55+j)}});
+    pens["B"+p]={pen:p,geno:g,weeks}}
+  ST.mode="demo";ST.birds=birds;ST.pens=pens;ST.config=deepMerge(clone(CONFIG_DEFAULT),{startDate:iso(0),trial:"ÖRNEK · Anadolu-T × Ross 308"});ST.rna={};DEG=null;ST.loaded=true;
+  if(!ST.role){ST.role="owner"}ST.canWrite=true;
+  toast("Örnek veri yüklendi");setView("okut");
+}
+
+/* ============ başlat ============ */
+readHash();
+render();
+Store.init().then(()=>{readHash();tryWanted()}).catch(e=>{console.error(e);ST.mode="local";ST.loaded=true;render()});
+</script>
+</body>
+</html>
