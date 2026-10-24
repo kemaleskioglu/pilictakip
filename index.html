@@ -213,9 +213,9 @@ img{max-width:100%}
 document.documentElement.lang="tr";
 /* ============ KURULUM: Supabase bilgileri (KURULUM.md'ye bak) ============
    Şifre bu dosyada YOKTUR; Supabase'de kullanıcı oluşturulurken belirlenir. */
-const SUPABASE_URL="";        // örnek: https://abcdefgh.supabase.co
-const SUPABASE_ANON_KEY="";   // Project Settings → API → anon public
-const OWNER_EMAIL="";         // Supabase'de oluşturduğun kullanıcının e-postası
+const SUPABASE_URL="https://jcfhxeumgwnwajrimcgc.supabase.co";        // örnek: https://abcdefgh.supabase.co
+const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjZmh4ZXVtZ3dud2FqcmltY2djIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4MTk2NDEsImV4cCI6MjEwODM5NTY0MX0.YykjDUBBVXA_HUoLWJoqROD7XpEaiRVXUBusa0yRaGM";   // Project Settings → API → anon public
+const OWNER_EMAIL="yonetici@pilictakip.app"; // yalnızca giriş kimliği         // Supabase'de oluşturduğun kullanıcının e-postası
 const SITE_URL=location.protocol.startsWith("http")?location.origin+location.pathname:"";
 const APP_URL=SITE_URL;
 const SB_READY=!!(SUPABASE_URL&&SUPABASE_ANON_KEY&&OWNER_EMAIL&&window.supabase);
@@ -1224,6 +1224,15 @@ function viewGate(){
       <label class="f"><span>Şifre</span><input class="i" type="password" id="gPw" name="password" inputmode="numeric" autocomplete="current-password" required></label>
       <button class="btn primary">Giriş yap</button>
       <p class="small" id="gErr" style="color:var(--bad);margin:0" role="alert"></p>
+      <button type="button" class="btn ghost" id="gFirst">İlk kez mi giriyorsun? Şifreni belirle</button>
+    </form>
+    <form id="gSet" class="stack" hidden autocomplete="on">
+      <input type="text" name="username" autocomplete="username" value="${esc(OWNER_EMAIL)}" hidden>
+      <p class="small muted" style="margin:0">Bu adım yalnızca bir kez yapılır. Belirlediğin şifre bu sayfanın kodunda saklanmaz.</p>
+      <label class="f"><span>Yeni şifre (en az 6 karakter)</span><input class="i" type="password" id="gNew1" inputmode="numeric" autocomplete="new-password" minlength="6" required></label>
+      <label class="f"><span>Yeni şifre (tekrar)</span><input class="i" type="password" id="gNew2" inputmode="numeric" autocomplete="new-password" minlength="6" required></label>
+      <button class="btn primary">Şifreyi kaydet ve gir</button>
+      <p class="small" id="gSetErr" style="color:var(--bad);margin:0" role="alert"></p>
     </form>
     ${ST.mode==="local"?`<p class="ref">Veritabanı bağlantısı kurulmadı; bu cihazdaki kayıtlar gösterilir.</p>`:""}
   </div></section>`;
@@ -1239,6 +1248,20 @@ function bindGate(){
     const ok=await login($("#gPw").value).catch(()=>false);
     btn.disabled=false;
     if(!ok){$("#gErr").textContent="Şifre yanlış ya da bağlantı yok.";$("#gPw").value="";$("#gPw").focus();return}
+    if(ST.want&&ST.loaded)tryWanted();else render();
+  };
+  $("#gFirst").onclick=()=>{$("#gForm").hidden=true;$("#gSet").hidden=false;$("#gNew1").focus()};
+  $("#gSet").onsubmit=async e=>{
+    e.preventDefault();const a=$("#gNew1").value,b=$("#gNew2").value,err=$("#gSetErr");err.textContent="";
+    if(a.length<6){err.textContent="Şifre en az 6 karakter olmalı.";return}
+    if(a!==b){err.textContent="İki şifre aynı değil.";return}
+    if(!sb){ST.role="owner";ST.canWrite=true;render();return}
+    const btn=e.submitter||$("#gSet button");btn.disabled=true;
+    const {data,error}=await sb.auth.signUp({email:OWNER_EMAIL,password:a});
+    btn.disabled=false;
+    if(error){err.textContent=/already|registered|exists/i.test(error.message)?"Şifre daha önce belirlenmiş; normal giriş ekranını kullan.":/not allowed|disabled/i.test(error.message)?"Şifre belirleme kapatılmış; normal giriş ekranını kullan.":"Kaydedilemedi: "+error.message;return}
+    if(!data.session){err.textContent="Şifre kaydedildi ama giriş açılmadı; normal giriş ekranından dene.";return}
+    ST.session=data.session;ST.role="owner";ST.canWrite=true;toast("Şifre kaydedildi");
     if(ST.want&&ST.loaded)tryWanted();else render();
   };
 }
