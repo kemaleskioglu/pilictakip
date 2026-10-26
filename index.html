@@ -161,6 +161,11 @@ body{margin:0}
 img{max-width:100%}
 [hidden]{display:none!important}
 .top .btn{padding:5px 10px;font-size:.85rem}
+/* canlı QR tarayıcı */
+.scanner{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column}
+.scanner video{flex:1;width:100%;min-height:0;object-fit:cover}
+.scan-frame{position:absolute;left:50%;top:42%;width:min(64vw,300px);aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.35)}
+.scan-bar{position:absolute;left:0;right:0;bottom:0;padding:16px max(16px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;align-items:center;color:#fff;font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.7))}
 /* giriş ekranı */
 .gate{min-height:70vh;display:grid;place-items:center;padding-block:24px}
 .gate-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
@@ -657,8 +662,9 @@ function viewScan(){
   const done=birdList().filter(b=>alive(b,d)&&wOf(b,d)!=null).length,act=birdList().filter(b=>alive(b,d)).length,dd=dayOfDate();
   return `<section class="card stack">
     <div class="row" style="justify-content:space-between"><h2>Bireyi aç</h2><span class="pill ok">${dd!=null?`Bugün ${dd}. gün`:"Başlangıç tarihi girilmedi"}</span></div>
-    <ol class="steps"><li><b>En hızlısı:</b> telefonun kendi kamerasını aç, etiketteki QR'a tut, çıkan bağlantıya dokun. Bu sayfa o bireyin kartıyla açılır.</li><li>Ya da aşağıdaki düğmeyle etiketin fotoğrafını çek.</li><li>Ya da numarayı yaz.</li></ol>
-    <button class="btn primary big" id="scanBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3"/><rect x="8" y="8" width="8" height="8"/></svg>Etiketin fotoğrafını çek</button>
+    <button class="btn primary big" id="scanBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3"/><rect x="8" y="8" width="8" height="8"/></svg>QR'ı kamerayla tara</button>
+    <p class="small muted" style="margin:0">Kamera açılır; etiketi çerçeveye getirmen yeterli, birey kendiliğinden açılır. Çekim olmasa da çalışır.</p>
+    <div class="row"><button class="btn" id="photoScanBtn" type="button">Etiketin fotoğrafını çek</button></div>
     <form class="row" id="manualForm"><input class="i mono" id="manualId" placeholder="Örnek: AT017" autocomplete="off" autocapitalize="characters" style="flex:1;min-width:140px"><button class="btn">Aç</button></form>
   </section>
   <section class="card">
@@ -674,7 +680,7 @@ function viewScan(){
 BIND.okut=()=>{
   const s=$("#goSetup");if(s){s.onclick=()=>setView("ayar");$("#goDemo").onclick=loadDemo;return}
   if(!$("#scanBtn"))return;
-  $("#scanBtn").onclick=()=>scanPhoto(null);
+  $("#scanBtn").onclick=()=>liveScan(null);$("#photoScanBtn").onclick=()=>scanPhoto(null);
   $("#manualForm").onsubmit=e=>{e.preventDefault();openBird($("#manualId").value)};
   $("#todoBtn").onclick=()=>{
     const d=nearestDay();const l=birdList().filter(b=>alive(b,d)&&wOf(b,d)==null);
@@ -682,6 +688,43 @@ BIND.okut=()=>{
     document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open));
   };
 };
+/* Canlı tarayıcı: Android'de yerleşik BarcodeDetector, diğerlerinde jsQR; kamera açılamazsa fotoğrafla okumaya düşer */
+let scanStop=null;
+async function liveScan(sec){
+  if(!navigator.mediaDevices?.getUserMedia)return scanPhoto(sec);
+  if(scanStop)scanStop();
+  const m=$("#modalBox");
+  m.innerHTML=`<div class="scanner" role="dialog" aria-label="QR tarayıcı"><video id="scV" playsinline muted autoplay></video><div class="scan-frame" aria-hidden="true"></div>
+    <div class="scan-bar"><span id="scMsg">QR'ı çerçeveye getir</span><div class="row" style="justify-content:center"><button class="btn" id="scPhoto">Fotoğrafla oku</button><button class="btn" id="scClose">Kapat</button></div></div></div>`;
+  let stream=null,stopped=false;
+  const close=()=>{stopped=true;scanStop=null;try{stream&&stream.getTracks().forEach(t=>t.stop())}catch(e){}if($("#modalBox .scanner"))m.innerHTML=""};
+  scanStop=close;
+  $("#scClose").onclick=close;$("#scPhoto").onclick=()=>{close();scanPhoto(sec)};
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}},audio:false})}
+  catch(e){close();toast("Kamera açılamadı; etiketin fotoğrafını çekerek oku",4000);return scanPhoto(sec)}
+  if(stopped){stream.getTracks().forEach(t=>t.stop());return}
+  const v=$("#scV");v.srcObject=stream;try{await v.play()}catch(e){}
+  let det=null;
+  try{if("BarcodeDetector" in window){const f=await BarcodeDetector.getSupportedFormats();if(f.includes("qr_code"))det=new BarcodeDetector({formats:["qr_code"]})}}catch(e){det=null}
+  if(!det){try{await loadScript(LIB.jsqr)}catch(e){}}
+  const c=document.createElement("canvas"),x=c.getContext("2d",{willReadFrequently:true});
+  let last="";
+  const tick=async()=>{
+    if(stopped)return;
+    if(v.readyState>=2&&v.videoWidth){
+      let txt=null;
+      try{
+        if(det){const r=await det.detect(v);if(r&&r[0])txt=r[0].rawValue}
+        else if(window.jsQR){const w=720,h=Math.round(v.videoHeight*w/v.videoWidth);c.width=w;c.height=h;x.drawImage(v,0,0,w,h);const r=window.jsQR(x.getImageData(0,0,w,h).data,w,h,{inversionAttempts:"attemptBoth"});if(r)txt=r.data}
+      }catch(e){}
+      if(txt){const id=parseQR(txt);
+        if(ST.birds[id]){try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}close();openBird(id,sec);toast(id+" açıldı");return}
+        if(id!==last){last=id;const el=$("#scMsg");if(el)el.textContent=`${id} bu denemede yok`}}
+    }
+    setTimeout(tick,det?100:160);
+  };
+  tick();
+}
 async function scanPhoto(sec){
   const f=await pickFile("#fileScan","image/*");if(!f)return;
   toast("Okunuyor…");
@@ -818,6 +861,7 @@ function bindBird(){
       clearDirty("week");toast(`${id} · ${d}. gün kaydedildi`);
       if(next){ST.cur=null;ST.view="okut"}
       render();
+      if(next)liveScan(null);
     }finally{btns.forEach(x=>{if(x&&x.isConnected)x.disabled=false})}
   };
   $("#saveWeek").onclick=()=>saveWeek(false);$("#saveNext").onclick=()=>saveWeek(true);
@@ -955,7 +999,7 @@ function viewMeat(){
 }
 BIND.et=()=>{
   $("#mForm").onsubmit=e=>{e.preventDefault();openBird($("#mId").value,$("#mSec").value)};
-  $("#mScan").onclick=()=>scanPhoto($("#mSec").value);
+  $("#mScan").onclick=()=>liveScan($("#mSec").value);
   document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open,"et"));
 };
 
