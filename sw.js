@@ -1,8 +1,8 @@
-/* PiliçTakip çevrimdışı önbelleği.
+/* KümesTakip çevrimdışı önbelleği.
    Sayfa: önce ağ, çekim yoksa önbellek (güncellemeler hemen gelir).
    Kütüphaneler, yazı tipleri, fotoğraflar: önce önbellek (değişmezler).
    Veritabanı ve giriş istekleri önbelleğe alınmaz. */
-const V = "pilictakip-v2";
+const V = "pilictakip-v3";
 const CORE = ["./", "./index.html", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 const LIBS = [
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js",

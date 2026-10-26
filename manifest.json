@@ -1,6 +1,6 @@
 {
-  "name": "PiliçTakip",
-  "short_name": "PiliçTakip",
+  "name": "KümesTakip",
+  "short_name": "KümesTakip",
   "description": "QR kimlikli bireysel piliç takibi: tartım, fotoğraf, kümes FCR, et kalitesi ve RNA-seq kayıtları.",
   "lang": "tr",
   "start_url": "./",

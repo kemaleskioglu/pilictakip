@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1f6b4f">
-<title>PiliçTakip</title>
+<title>KümesTakip</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="PiliçTakip">
+<meta name="apple-mobile-web-app-title" content="KümesTakip">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: saha aracı — üstte deneme şeridi, ortada tek görünüm, telefonda altta sekme çubuğu; masaüstünde sekmeler üstte */
 :root{
@@ -23,20 +23,26 @@
   --ok:#2e7d3e; --warn:#a35f00; --bad:#b3261e; --warn-soft:#fbeed9; --bad-soft:#f9e1df;
   --body:"Noto Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:"Noto Sans Mono",ui-monospace,Menlo,Consolas,monospace;
+  --brand:"Fredoka","Noto Sans",system-ui,sans-serif;
   --r:8px;
+  --sky:#dff0e6; --topbg:rgba(243,245,242,.86);
+  --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%231f6b4f' stroke-opacity='.075' stroke-width='2' stroke-linecap='round'%3E%3Cellipse cx='34' cy='38' rx='11' ry='14'/%3E%3Cellipse cx='118' cy='112' rx='9' ry='12'/%3E%3Cpath d='M106 22c12 6 18 18 14 32M110 30l-8 5M114 37l-8 4M117 44l-8 3'/%3E%3Cpath d='M26 118c6 10 17 15 28 12M32 121l2 8M39 125l1 8M46 127l0 8'/%3E%3Ccircle cx='80' cy='78' r='2'/%3E%3Ccircle cx='140' cy='40' r='1.6'/%3E%3Ccircle cx='70' cy='146' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#111613; --surface:#18201b; --sunk:#202a23; --line:#2f3b33; --fg:#e6ece7; --muted:#a2b0a6;
   --accent:#5fbf95; --accent-fg:#0c1510; --accent-soft:#1e3328;
   --at:#e7b23a; --at-soft:#3a2f14; --rs:#7aa7f0; --rs-soft:#1c2a42;
-  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; color-scheme:dark}}
+  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; --sky:#152a1f; --topbg:rgba(17,22,19,.86);
+  --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%235fbf95' stroke-opacity='.08' stroke-width='2' stroke-linecap='round'%3E%3Cellipse cx='34' cy='38' rx='11' ry='14'/%3E%3Cellipse cx='118' cy='112' rx='9' ry='12'/%3E%3Cpath d='M106 22c12 6 18 18 14 32M110 30l-8 5M114 37l-8 4M117 44l-8 3'/%3E%3Cpath d='M26 118c6 10 17 15 28 12M32 121l2 8M39 125l1 8M46 127l0 8'/%3E%3Ccircle cx='80' cy='78' r='2'/%3E%3Ccircle cx='140' cy='40' r='1.6'/%3E%3Ccircle cx='70' cy='146' r='1.6'/%3E%3C/g%3E%3C/svg%3E"); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111613; --surface:#18201b; --sunk:#202a23; --line:#2f3b33; --fg:#e6ece7; --muted:#a2b0a6;
   --accent:#5fbf95; --accent-fg:#0c1510; --accent-soft:#1e3328;
   --at:#e7b23a; --at-soft:#3a2f14; --rs:#7aa7f0; --rs-soft:#1c2a42;
-  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; color-scheme:dark}
+  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; --sky:#152a1f; --topbg:rgba(17,22,19,.86);
+  --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%235fbf95' stroke-opacity='.08' stroke-width='2' stroke-linecap='round'%3E%3Cellipse cx='34' cy='38' rx='11' ry='14'/%3E%3Cellipse cx='118' cy='112' rx='9' ry='12'/%3E%3Cpath d='M106 22c12 6 18 18 14 32M110 30l-8 5M114 37l-8 4M117 44l-8 3'/%3E%3Cpath d='M26 118c6 10 17 15 28 12M32 121l2 8M39 125l1 8M46 127l0 8'/%3E%3Ccircle cx='80' cy='78' r='2'/%3E%3Ccircle cx='140' cy='40' r='1.6'/%3E%3Ccircle cx='70' cy='146' r='1.6'/%3E%3C/g%3E%3C/svg%3E"); color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--fg)}
+body{background-color:var(--bg);background-image:var(--pattern),linear-gradient(180deg,var(--sky) 0,var(--bg) 420px);background-repeat:repeat,no-repeat;background-size:160px 160px,100% 100%;background-attachment:fixed,fixed}
 body{font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:88px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 h1,h2,h3{font-family:var(--body);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:0;line-height:1.25}
@@ -50,8 +56,9 @@ button{cursor:pointer}
 .small{font-size:.88rem}
 .wrap{max-width:1080px;margin:0 auto}
 
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;gap:12px;padding-block:10px;border-bottom:1px solid var(--line)}
-.brand{font-weight:700;font-size:1.2rem;letter-spacing:-.01em}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--topbg);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;align-items:center;gap:12px;padding-block:10px;border-bottom:1px solid var(--line)}
+.brand{font-family:var(--brand);font-weight:600;font-size:1.3rem;letter-spacing:0;display:flex;align-items:center;gap:8px}
+.brand .mark{width:30px;height:30px;border-radius:9px;flex:0 0 auto;background:#1f6b4f url("icons/icon-192.png") center/cover;box-shadow:0 2px 6px rgba(0,0,0,.15)}
 .brand b{color:var(--accent);font-weight:700}
 .trial{flex:1;min-width:0;color:var(--muted);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
@@ -169,7 +176,12 @@ img{max-width:100%}
 /* giriş ekranı */
 .gate{min-height:70vh;display:grid;place-items:center;padding-block:24px}
 .gate-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
-.gate-card .logo{font-size:2rem;font-weight:700;letter-spacing:-.02em}
+.gate-card .logo{font-family:var(--brand);font-size:2.3rem;font-weight:600;letter-spacing:0;line-height:1.1}
+.gate-card{overflow:hidden}
+.gate-card .hero{margin:-24px -24px 4px;width:calc(100% + 48px);max-width:none;display:block}
+.hero-band{display:block;width:100%;max-width:100%;border-radius:12px;border:1px solid var(--line)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .hero,:root:not([data-theme="light"]) .hero-band{filter:brightness(.82) saturate(.9)}}
+:root[data-theme="dark"] .hero,:root[data-theme="dark"] .hero-band{filter:brightness(.82) saturate(.9)}
 .gate-card .logo b{color:var(--accent)}
 .gate-card .btn.big{min-height:56px}
 /* ziyaretçi zaman çizelgesi */
@@ -197,7 +209,7 @@ img{max-width:100%}
 <body>
 
 <header class="top wrap" lang="tr">
-  <div class="brand">Piliç<b>Takip</b></div>
+  <div class="brand"><span class="mark" aria-hidden="true"></span><span>Kümes<b>Takip</b></span></div>
   <div class="trial" id="trialName">Bireysel kanatlı deneme kaydı</div>
   <span class="chip" id="sync"><i></i><span>Bağlanıyor</span></span>
   <button class="btn ghost" id="exitBtn" hidden>Çıkış</button>
@@ -658,7 +670,7 @@ window.addEventListener("hashchange",()=>{readHash();tryWanted()});
 function viewScan(){
   const n=birdList().length,d=nearestDay();
   if(!n&&ST.mode!=="local"&&ST.mode!=="demo"&&!ST.loaded)return `<div class="empty">Kayıtlar yükleniyor…</div>`;
-  if(!n)return `<section class="card stack"><h2>Deneme henüz kurulmadı</h2><p class="muted">Bireyler oluşturulunca her biri için QR etiketi basılır. Etiketi telefonun kamerasıyla okuttuğunda bireyin kartı doğrudan açılır.</p><div class="row"><button class="btn primary" id="goSetup">Denemeyi kur</button><button class="btn" id="goDemo">Örnek veriyle dene</button></div></section>`;
+  if(!n)return `<section class="card stack">${heroSVG("hero-band",150)}<h2>Deneme henüz kurulmadı</h2><p class="muted">Bireyler oluşturulunca her biri için QR etiketi basılır. Etiketi telefonun kamerasıyla okuttuğunda bireyin kartı doğrudan açılır.</p><div class="row"><button class="btn primary" id="goSetup">Denemeyi kur</button></div></section>`;
   const done=birdList().filter(b=>alive(b,d)&&wOf(b,d)!=null).length,act=birdList().filter(b=>alive(b,d)).length,dd=dayOfDate();
   return `<section class="card stack">
     <div class="row" style="justify-content:space-between"><h2>Bireyi aç</h2><span class="pill ok">${dd!=null?`Bugün ${dd}. gün`:"Başlangıç tarihi girilmedi"}</span></div>
@@ -678,7 +690,7 @@ function viewScan(){
   </section>`;
 }
 BIND.okut=()=>{
-  const s=$("#goSetup");if(s){s.onclick=()=>setView("ayar");$("#goDemo").onclick=loadDemo;return}
+  const s=$("#goSetup");if(s){s.onclick=()=>setView("ayar");return}
   if(!$("#scanBtn"))return;
   $("#scanBtn").onclick=()=>liveScan(null);$("#photoScanBtn").onclick=()=>scanPhoto(null);
   $("#manualForm").onsubmit=e=>{e.preventDefault();openBird($("#manualId").value)};
@@ -1162,7 +1174,7 @@ function viewSettings(){
 
     <div class="sub">QR etiketi</div>
     <div class="seg" role="group"><button data-qm="url" aria-pressed="${c.qrMode!=="id"}">Bağlantılı (önerilen)</button><button data-qm="id" aria-pressed="${c.qrMode==="id"}">Yalnız numara</button></div>
-    ${c.qrMode!=="id"?`<ol class="steps"><li>QR, bu sayfanın bağlantısını ve bireyin numarasını taşır.</li><li>Telefonun kendi kamerasını aç, QR'a tut, çıkan bağlantıya dokun: PiliçTakip o bireyin kartıyla açılır.</li><li>Açılan sayfada "Ziyaretçi" ya da "Kullanıcı" seçilir. Sayfayı ana ekrana eklersen (Paylaş → Ana Ekrana Ekle) daha hızlı açılır.</li><li>Etiket en az 15 mm olmalı; 16–18 mm rahat okunur.</li></ol>
+    ${c.qrMode!=="id"?`<ol class="steps"><li>QR, bu sayfanın bağlantısını ve bireyin numarasını taşır.</li><li>Telefonun kendi kamerasını aç, QR'a tut, çıkan bağlantıya dokun: KümesTakip o bireyin kartıyla açılır.</li><li>Açılan sayfada "Ziyaretçi" ya da "Kullanıcı" seçilir. Sayfayı ana ekrana eklersen (Paylaş → Ana Ekrana Ekle) daha hızlı açılır.</li><li>Etiket en az 15 mm olmalı; 16–18 mm rahat okunur.</li></ol>
     ${SITE_URL?`<p class="small">QR'lardaki bağlantı: <span class="mono" style="word-break:break-all">${esc(SITE_URL)}</span></p>`:`<p class="banner">Bu sayfa henüz internette yayında değil. QR'ları sayfa yayınlandıktan sonra, yayındaki adresten bas.</p>`}`:`<p class="ref">Yalnız numara: kod küçük kalır (12 mm yeter) ama telefon kamerası kartı açmaz; Okut sekmesindeki "Etiketin fotoğrafını çek" düğmesi gerekir.</p>`}
     <div class="row"><label class="f" style="width:150px"><span>QR boyutu (mm)</span><input class="i num" id="qrSize" value="${c.qrMode!=="id"?16:12}" inputmode="decimal"></label><button class="btn primary" id="pdfBtn" ${n?"":"disabled"}>Etiket sayfasını indir (PDF)</button></div>
     ${first?`<div class="row"><div style="width:110px;border-radius:6px;overflow:hidden">${qrSVG(qrText(first.id))}</div><span class="small muted">Örnek: ${esc(first.id)}<br><span class="mono" style="word-break:break-all">${esc(qrText(first.id))}</span></span></div>`:""}
@@ -1177,7 +1189,6 @@ function viewSettings(){
     <p class="ref">Çekim yokken: son eşitlenen kayıtlar ve daha önce açılan fotoğraflar görünür, yeni tartım ve fotoğraflar telefonda bekletilir ve bağlantı gelince kendiliğinden gönderilir. İlk açılış ve ilk giriş için bir kez internet gerekir.</p>
   </div>
   <div class="card stack"><h3>Hesap</h3><p class="small muted">${ST.mode==="db"?`Kullanıcı olarak giriş yapıldı. Ziyaretçiler yalnızca birey kimliğini, fotoğrafları ve girilmiş verileri görür; kayıt giremez.`:`Veritabanı bağlantısı kurulmadı; KURULUM.md dosyasındaki adımları izle.`}</p><div class="row"><button class="btn" id="logoutBtn">Çıkış yap</button><button class="btn" id="asVisitor">Ziyaretçi görünümüne bak</button></div></div>
-  <div class="card stack"><h3>Örnek veri</h3><p class="small muted">240 bireylik benzetilmiş bir denemeyle tüm ekranları dene. Örnek veri kaydedilmez; çıkınca gerçek verin aynen döner.</p><div class="row"><button class="btn" id="demoBtn">Örnek veriyle dene</button></div></div>
   </section>`;
 }
 BIND.ayar=()=>{
@@ -1203,7 +1214,6 @@ BIND.ayar=()=>{
   document.querySelectorAll("[data-qm]").forEach(b=>b.onclick=async()=>{await Store.patch("config/main",{qrMode:b.dataset.qm});render()});
   $("#mkBirds").onclick=makeBirds;$("#impBirds").onclick=importBirds;$("#pdfBtn").onclick=labelPDF;
   $("#xlsxBtn").onclick=exportXLSX;$("#zipBtn").onclick=exportZIP;$("#jsonBtn").onclick=exportJSON;$("#jsonIn").onclick=importJSON;
-  $("#demoBtn").onclick=loadDemo;
   $("#logoutBtn").onclick=logout;
   const ib=$("#installBtn");if(ib)ib.onclick=async()=>{installEvt.prompt();const r=await installEvt.userChoice.catch(()=>null);installEvt=null;if(r?.outcome==="accepted")toast("Uygulama kuruldu");render()};
   $("#asVisitor").onclick=()=>{ST.role="visitor";ST.canWrite=false;ST.cur=null;render()};
@@ -1265,7 +1275,7 @@ async function exportXLSX(){
   add("Gompertz",birdList().map(b=>{const f=birdGomp(b);return f?{"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","A (g)":f.A,"k (1/gün)":f.k,"ti (gün)":f.ti,"Wi (g)":f.Wi,"Maks. büyüme hızı (g/gün)":f.MGR,"R²":f.r2,"Tartım sayısı":f.n}:null}).filter(Boolean));
   const ap=areaPairs(null);add("Görüntü-ağırlık",ap.map(p=>({"Kimlik":p.b,"Genotip":gname(p.g),"Gün":p.d,"Alan (cm²)":p.a,"Canlı ağırlık (g)":p.y,"Tahmin (g)":predictW(p.g,p.a)})));
   const buf=X.write(wb,{type:"array",bookType:"xlsx"});
-  await saveFile(`PiliçTakip_${todayISO()}.xlsx`,new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  await saveFile(`KümesTakip_${todayISO()}.xlsx`,new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
 }
 async function exportZIP(){
   await loadScript(LIB.zip);const z=new window.JSZip();let n=0,fail=0;
@@ -1280,9 +1290,9 @@ async function exportZIP(){
       else{const x=await fetch(photoSrc(r));if(x.ok)blob=await x.blob()}
       if(blob){z.file(r.startsWith("demo:")?j.name.replace(".jpg",".svg"):j.name,blob);n++}else fail++}catch(e){fail++}
   }
-  const out=await z.generateAsync({type:"blob"});await saveFile(`PiliçTakip_fotoğraflar_${todayISO()}.zip`,out);if(fail)toast(`${fail} fotoğraf alınamadı`);
+  const out=await z.generateAsync({type:"blob"});await saveFile(`KümesTakip_fotoğraflar_${todayISO()}.zip`,out);if(fail)toast(`${fail} fotoğraf alınamadı`);
 }
-async function exportJSON(){await saveFile(`PiliçTakip_yedek_${todayISO()}.json`,JSON.stringify({v:2,at:new Date().toISOString(),birds:ST.birds,pens:ST.pens,config:ST.config,rna:ST.rna},null,1))}
+async function exportJSON(){await saveFile(`KümesTakip_yedek_${todayISO()}.json`,JSON.stringify({v:2,at:new Date().toISOString(),birds:ST.birds,pens:ST.pens,config:ST.config,rna:ST.rna},null,1))}
 async function importJSON(){
   const f=await pickFile("#fileAny",".json,application/json");if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(e){toast("Geçersiz yedek dosyası");return}
   if(!d.birds){toast("Yedekte birey verisi yok");return}
@@ -1444,11 +1454,57 @@ function viewAnaliz(){
 }
 BIND.analiz=()=>{$("#calBtn").onclick=calibDlg;$("#recBtn").onclick=recomputeAreas};
 
+/* ============ ÇİZİMLER ============ */
+function chickSVG(x,y,s,flip,tag){
+  return `<g transform="translate(${x} ${y}) scale(${flip?-s:s} ${s})">
+    <path d="M-6 16 L-8 27 M-8 27 l-5 3 M-8 27 l4 3 M6 16 L5 27 M5 27 l-5 3 M5 27 l4 3" stroke="#e8892b" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+    ${tag?`<rect x="1" y="19" width="9" height="9" rx="1.5" fill="#fff" stroke="#18211b" stroke-width=".8"/><rect x="2.8" y="20.8" width="2.4" height="2.4" fill="#18211b"/><rect x="6" y="24" width="2.4" height="2.4" fill="#18211b"/>`:""}
+    <ellipse cx="0" cy="4" rx="17" ry="14" fill="#f6c945"/>
+    <path d="M-10 4 q6 9 15 3" stroke="#dba42a" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <circle cx="11" cy="-10" r="10" fill="#f6c945"/>
+    <path d="M7 -21 q3 -5 6 0 q2 -4 5 1" stroke="#f6c945" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M19 -11 l8 2.5 l-8 2.5 z" fill="#e8892b"/>
+    <circle cx="13.5" cy="-12" r="1.7" fill="#18211b"/>
+    <circle cx="9" cy="-6" r="2.2" fill="#f49b7a" opacity=".55"/>
+  </g>`;
+}
+function heroSVG(cls="hero",h=210){
+  return `<svg class="${cls}" viewBox="0 0 420 ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Kümes, çit ve civcivler">
+  <defs>
+    <linearGradient id="kSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9dcef"/><stop offset=".75" stop-color="#e6f5ea"/></linearGradient>
+    <linearGradient id="kHillA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9bd08d"/><stop offset="1" stop-color="#6db470"/></linearGradient>
+    <linearGradient id="kHillB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fa964"/><stop offset="1" stop-color="#2f7d4c"/></linearGradient>
+    <radialGradient id="kSun"><stop offset="0" stop-color="#fff3c4"/><stop offset=".6" stop-color="#ffd76a"/><stop offset="1" stop-color="#ffd76a" stop-opacity="0"/></radialGradient>
+    <linearGradient id="kWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9a46f"/><stop offset="1" stop-color="#cf8250"/></linearGradient>
+  </defs>
+  <rect width="420" height="${h}" fill="url(#kSky)"/>
+  <circle cx="340" cy="48" r="42" fill="url(#kSun)"/><circle cx="340" cy="48" r="17" fill="#ffd35c"/>
+  <g fill="#fff" opacity=".9"><ellipse cx="88" cy="40" rx="30" ry="9"/><ellipse cx="108" cy="33" rx="18" ry="10"/><ellipse cx="236" cy="58" rx="24" ry="7"/><ellipse cx="250" cy="52" rx="13" ry="7"/></g>
+  <path d="M0 ${h*0.66} Q 90 ${h*0.5} 190 ${h*0.62} T 420 ${h*0.58} V${h} H0Z" fill="url(#kHillA)"/>
+  <g transform="translate(236 ${h*0.36})">
+    <rect x="0" y="34" width="104" height="66" rx="3" fill="url(#kWall)"/>
+    <path d="M-12 38 L52 -2 L116 38 Z" fill="#7b3f2b"/><path d="M-12 38 L52 -2 L116 38" stroke="#5e2d1e" stroke-width="4" fill="none" stroke-linejoin="round"/>
+    <rect x="38" y="56" width="28" height="44" rx="2" fill="#f7efe4"/><path d="M38 56 l28 44 M66 56 l-28 44" stroke="#cf8250" stroke-width="3"/>
+    <circle cx="52" cy="22" r="10" fill="#f7efe4"/><circle cx="52" cy="22" r="7" fill="#5e2d1e"/>
+    <circle cx="55" cy="21" r="4.5" fill="#f6c945"/><path d="M58 21 l4 1 l-4 1.5z" fill="#e8892b"/><circle cx="56" cy="20" r=".9" fill="#18211b"/>
+    <path d="M8 46 h22 v12 h-22z M74 46 h22 v12 h-22z" fill="#f7efe4" opacity=".85"/>
+  </g>
+  <g stroke="#f7efe4" stroke-width="4" stroke-linecap="round" opacity=".95">
+    <path d="M10 ${h*0.74} H220"/><path d="M10 ${h*0.82} H220"/>
+    ${[18,58,98,138,178,214].map(x=>`<path d="M${x} ${h*0.7} V${h*0.88}"/>`).join("")}
+  </g>
+  <path d="M0 ${h*0.86} Q 120 ${h*0.74} 250 ${h*0.85} T 420 ${h*0.82} V${h} H0Z" fill="url(#kHillB)"/>
+  <g fill="#f1d58a" opacity=".85">${[[60,.93],[96,.95],[150,.92],[300,.94],[330,.96],[372,.93]].map(([x,f])=>`<circle cx="${x}" cy="${h*f}" r="1.8"/>`).join("")}</g>
+  ${chickSVG(70,h*0.84,1.05,false,true)}${chickSVG(128,h*0.88,0.8,true,false)}${chickSVG(196,h*0.86,0.95,false,false)}${chickSVG(372,h*0.85,0.7,true,false)}
+  </svg>`;
+}
+
 /* ============ GİRİŞ EKRANI ============ */
 function viewGate(){
   const w=ST.want?.id;
   return `<section class="gate"><div class="gate-card">
-    <div class="logo">Piliç<b>Takip</b></div>
+    ${heroSVG()}
+    <div class="logo">Kümes<b style="color:var(--accent)">Takip</b></div>
     <p class="muted" style="margin:0">${esc(ST.config.trial||"Bireysel kanatlı deneme kaydı")}</p>
     ${w?`<p style="margin:0">Okutulan birey: <span class="tag ${esc(ST.birds[w]?.geno||"")}">${esc(w)}</span></p>`:""}
     <button class="btn primary big" id="gVisitor">Ziyaretçi olarak gir</button>
@@ -1507,6 +1563,7 @@ function viewVisitorList(){
   const q=normId(ST.vq||"");let l=birdList();if(q)l=l.filter(b=>b.id.includes(q));
   if(!birdList().length)return ST.loaded?`<div class="empty">Henüz kayıtlı birey yok.</div>`:`<div class="empty">Kayıtlar yükleniyor…</div>`;
   return `<section class="stack">
+    ${heroSVG("hero-band",150)}
     <h2>Bireyler</h2>
     <form class="row" id="vForm"><input class="i mono" id="vq" placeholder="Kimlik ara, örnek: AT017" value="${esc(ST.vq||"")}" autocapitalize="characters" style="flex:1;min-width:160px"><button class="btn primary">Aç</button></form>
     <div class="vlist">${l.slice(0,300).map((b,i)=>{const p=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,20)*40}ms"><div class="ph">${p?imgTag(p,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}</span><span class="small">${esc(gname(b.geno))} · Kümes ${esc(b.pen)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")}</div>
