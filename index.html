@@ -211,7 +211,7 @@ img{max-width:100%}
 
 <header class="top wrap" lang="tr">
   <div class="brand"><span class="mark" aria-hidden="true"></span><span>Kümes<b>Takip</b></span></div>
-  <div class="trial" id="trialName">Bireysel kanatlı deneme kaydı</div>
+  <div class="trial" aria-hidden="true"></div>
   <span class="chip" id="sync"><i></i><span>Bağlanıyor</span></span>
   <button class="btn ghost" id="exitBtn" hidden>Çıkış</button>
 </header>
@@ -496,7 +496,7 @@ function syncChip(kind,text){
     else{kind="ok";text=ST.canWrite?"Eşitlendi":"Görüntüleme"}
   }
   c.className="chip "+kind;c.querySelector("span").textContent=text;
-  $("#trialName").textContent=ST.config.trial||"";
+
 }
 
 /* ============ alan tanımları (Ayarlar'da düzenlenir) ============ */
@@ -1506,7 +1506,7 @@ function viewGate(){
   return `<section class="gate"><div class="gate-card">
     ${heroSVG()}
     <div class="logo">Kümes<b style="color:var(--accent)">Takip</b></div>
-    <p class="muted" style="margin:0">${esc(ST.config.trial||"Bireysel kanatlı deneme kaydı")}</p>
+    <p class="muted" style="margin:0">Bireysel kanatlı takip</p>
     ${w?`<p style="margin:0">Okutulan birey: <span class="tag ${esc(ST.birds[w]?.geno||"")}">${esc(w)}</span></p>`:""}
     <button class="btn primary big" id="gVisitor">Ziyaretçi olarak gir</button>
     <button class="btn big" id="gUser">Kullanıcı olarak gir</button>
