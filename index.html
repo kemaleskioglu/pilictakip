@@ -52,7 +52,7 @@ button{cursor:pointer}
 .chip.ok i{background:var(--ok)} .chip.warn i{background:var(--warn)} .chip.bad i{background:var(--bad)}
 .banner{margin-top:10px;padding:10px 12px;border-radius:var(--r);background:var(--warn-soft);color:var(--fg);font-size:.92rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
 .tabs button{background:none;border:0;padding:8px 2px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--muted)}
 .tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
@@ -197,6 +197,7 @@ img{max-width:100%}
   <button data-v="kumes"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg>Kümes</button>
   <button data-v="et"><svg viewBox="0 0 24 24"><path d="M6 14c-2-4 1-9 6-9 4 0 7 3 7 7 0 5-5 8-9 7"/><path d="M6 14l-2 4 3 1 1 2 3-2"/></svg>Et kalitesi</button>
   <button data-v="rna"><svg viewBox="0 0 24 24"><path d="M7 3c0 6 10 6 10 12s-10 6-10 6M17 3c0 6-10 6-10 12s10 6 10 6"/><path d="M8 7h8M8 17h8"/></svg>RNA-seq</button>
+  <button data-v="analiz"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Analiz</button>
   <button data-v="ayar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2.1-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2.1 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2.1 1.2L10 21h4l.5-2.6a7 7 0 0 0 2.1-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>Ayarlar</button>
 </nav>
 <main class="wrap" id="main" lang="tr"></main>
@@ -614,7 +615,7 @@ function render(){
     if(!ST.role){m.innerHTML=viewGate();bindGate();return}
     if(ST.role==="visitor"){if(ST.cur&&ST.birds[ST.cur]){m.innerHTML=viewVisitorBird(ST.birds[ST.cur]);bindVisitorBird()}else{ST.cur=null;m.innerHTML=viewVisitorList();bindVisitorList()}return}
     if(ST.cur&&ST.birds[ST.cur]){m.innerHTML=viewBird(ST.birds[ST.cur]);bindBird()}
-    else{ST.cur=null;const v={okut:viewScan,bireyler:viewBirds,kumes:viewPens,et:viewMeat,rna:viewRna,ayar:viewSettings}[ST.view]||viewScan;m.innerHTML=v();(BIND[ST.view]||(()=>{}))()}
+    else{ST.cur=null;const v={okut:viewScan,bireyler:viewBirds,kumes:viewPens,et:viewMeat,rna:viewRna,analiz:viewAnaliz,ayar:viewSettings}[ST.view]||viewScan;m.innerHTML=v();(BIND[ST.view]||(()=>{}))()}
   }catch(e){console.error(e);m.innerHTML=`<div class="card stack"><h3>Bu ekran açılamadı</h3><p class="small muted">${esc(e.message)}</p><div class="row"><button class="btn" id="errHome">Ana ekrana dön</button></div></div>`;const eh=$("#errHome");if(eh)eh.onclick=()=>setView("okut")}
   markTab();window.scrollTo(0,y);
 }
@@ -702,13 +703,16 @@ function viewBird(b){
       <button class="ph" id="ph_top" type="button">${wk.top?imgTag(wk.top,"üstten"):"Üstten fotoğraf<br>(ölçüm için)"}</button>
       <button class="ph" id="ph_side" type="button">${wk.side?imgTag(wk.side,"yandan"):"Yandan fotoğraf<br>(isteğe bağlı)"}</button>
     </div>
+    <div id="segInfo" class="small">${num(wk.area)?`Kapladığı alan: <b>${fmt(num(wk.area),1)} cm²</b>${predictW(b.geno,num(wk.area))?` · fotoğraftan tahmin ≈ <b>${fmt(predictW(b.geno,num(wk.area)))} g</b>`:""}`:""}</div>
     <label class="f"><span>Not</span><textarea class="i" id="w_note" rows="2">${esc(wk.note||"")}</textarea></label>
     <div class="row"><button class="btn primary" id="saveWeek">Kaydet</button><button class="btn" id="saveNext">Kaydet, sonraki bireye geç</button></div>
   </section>`:"";
+  const gf=birdGomp(b);
   const growth=`<section class="card stack"><h3>Gelişim</h3>
     <div class="strip">${ds.map(x=>{const w=b.weeks?.["d"+x]||{};return `<div class="shot"><div class="ph">${w.top?imgTag(w.top,b.id+" "+x+". gün"):`<span>fotoğraf yok</span>`}</div><span>${x}. gün · <b>${wOf(b,x)!=null?fmt(wOf(b,x))+" g":"—"}</b></span></div>`}).join("")}</div>
-    ${lineChart({series:[{pts:tg,color:mut,dash:"2 4",wd:1.5},{pts:pm,color:mut,dash:"6 4"},{pts:own,color:col,dots:1,wd:2.5}]})}
-    <div class="legend"><span><i style="border-color:${col}"></i>${esc(b.id)}</span><span><i style="border-color:${mut};border-top-style:dashed"></i>Kümes ${esc(b.pen)} ortalaması</span><span><i style="border-color:${mut};border-top-style:dotted"></i>Hedef</span></div>
+    ${lineChart({series:[{pts:tg,color:mut,dash:"2 4",wd:1.5},{pts:pm,color:mut,dash:"6 4"},...(gf?[{pts:gompCurve(gf,0,Math.max(...ds)),color:cssv("--accent"),dash:"3 3",wd:1.8}]:[]),{pts:own,color:col,dots:1,wd:2.5}]})}
+    <div class="legend"><span><i style="border-color:${col}"></i>${esc(b.id)}</span><span><i style="border-color:${mut};border-top-style:dashed"></i>Kümes ${esc(b.pen)} ortalaması</span><span><i style="border-color:${mut};border-top-style:dotted"></i>Hedef</span>${gf?`<span><i style="border-color:${cssv("--accent")};border-top-style:dashed"></i>Gompertz</span>`:""}</div>
+    ${gf?`<p class="small" style="margin:0">Gompertz: A = ${fmt(gf.A)} g · k = ${fmt(gf.k,4)} /gün · ti = ${fmt(gf.ti,1)} gün · maks. hız = ${fmt(gf.MGR,1)} g/gün · R² = ${fmt(gf.r2,3)}</p>`:""}
   </section>`;
   const table=`<section class="card"><h3>Tüm haftalar</h3>
     <div class="tablewrap"><table class="t"><thead><tr><th>Gün</th><th>Tarih</th><th class="n">Ağırlık (g)</th><th class="n">Günlük artış (g)</th>${ex.map(m=>`<th class="n">${esc(flabel(m))}</th>`).join("")}<th>Halka</th><th>Not</th></tr></thead><tbody>
@@ -767,7 +771,7 @@ function bindBird(){
   if(!ST.canWrite)return;
   const d=ST.curDay??nearestDay();
   document.querySelectorAll("[data-day]").forEach(x=>x.onclick=()=>{if($("#weekForm").dataset.dirty==="1"){toast("Önce bu günü kaydet");return}ST.curDay=Number(x.dataset.day);render()});
-  const pend={};
+  const pend={};let pendSeg=null;
   $("#w_w").oninput=()=>{const w=num(val("w_w")),e=expectedW(b,d);const box=$("#wWarn");box.innerHTML=w!=null&&e&&Math.abs(w-e)/e>0.25?`<div class="banner" style="margin:0">${fmt(w)} g, beklenen ≈ ${fmt(e)} g değerinden %${fmt(Math.abs(w-e)/e*100)} sapıyor. Doğru birey ve doğru değer mi?</div>`:""};
   ["top","side"].forEach(slot=>{$("#ph_"+slot).onclick=async()=>{
     const f=await pickFile("#filePhoto","image/*");if(!f)return;
@@ -775,6 +779,13 @@ function bindBird(){
     try{
       const {blob,canvas}=await compress(f,1600);
       pend[slot]=blob;box.innerHTML=`<img src="${URL.createObjectURL(blob)}" alt="">`;$("#weekForm").dataset.dirty="1";
+      if(slot==="top"){
+        const si=$("#segInfo");
+        if(!ST.config.calib?.pxPerCm){si.innerHTML=`<span class="muted">Fotoğraftan alan ölçmek için önce Analiz → Kalibrasyon yap.</span>`;pendSeg=null}
+        else{const seg=segmentBird(canvas),a=areaCm2(seg);pendSeg=a?{area:Math.round(a*10)/10,areaPx:Math.round(seg.px)}:null;
+          const pw=a?predictW(b.geno,a):null;
+          si.innerHTML=a?`<div class="row" style="align-items:center"><img src="${seg.preview}" alt="Ayrılan bölge" style="width:120px;border-radius:6px"><span>Kapladığı alan: <b>${fmt(a,1)} cm²</b>${pw?` · fotoğraftan tahmin ≈ <b>${fmt(pw)} g</b>`:""}<br><span class="muted">Kırmızı bölge birey olarak ölçüldü. Yanlışsa zemini sadeleştirip yeniden çek.</span></span></div>`:`<span class="muted">Birey zeminden ayrılamadı; tek renk zeminde yeniden çek.</span>`}
+      }
       const qid=await decodeQR(canvas).catch(()=>null);
       if(qid&&qid!==id)dlg(`<h3>Etiket uyuşmuyor</h3><p>Fotoğraftaki QR <b class="mono">${esc(qid)}</b>, açık kart <b class="mono">${esc(id)}</b>. Yanlış birey olabilir; kaydetmeden önce kontrol et.</p>`,null);
       else if(qid===id)toast("Fotoğraftaki etiket doğrulandı: "+id);
@@ -786,6 +797,7 @@ function bindBird(){
       const patch={w:val("w_w")===""?"":String(num(val("w_w"))??""),band:val("w_band"),note:val("w_note"),date:dateOfDay(d)||todayISO(),at:new Date().toISOString()};
       FON("weekly").forEach(m=>{const v=val("x_"+m.k);if(v!==undefined)patch[m.k]=ftype(m)==="num"?(v===""?"":String(num(v)??v)):v});
       for(const slot of ["top","side"])if(pend[slot]){toast("Fotoğraf yükleniyor…",8000);const r=await Store.putPhoto(pend[slot],id);if(r)patch[slot]=r}
+      if(pend.top&&pendSeg)Object.assign(patch,pendSeg);
       if(!await Store.patch("birds/"+id,{weeks:{["d"+d]:patch}}))return;
       clearDirty("week");toast(`${id} · ${d}. gün kaydedildi`);
       if(next){ST.cur=null;ST.view="okut"}
@@ -1171,7 +1183,7 @@ async function labelPDF(){
 const photoName=(b,d,t)=>`${b.id}_${d}gün_${t}.jpg`;
 function longRows(){
   const ex=FON("weekly");const out=[];
-  birdList().forEach(b=>days().forEach(d=>{const w=b.weeks?.["d"+d];if(!w)return;const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Gün":d,"Tarih":trDate(w.date),"Canlı ağırlık (g)":num(w.w)};ex.forEach(m=>r[flabel(m)]=ftype(m)==="text"?(w[m.k]||""):num(w[m.k]));r["Halka durumu"]=w.band||"";r["Üstten fotoğraf"]=w.top?photoName(b,d,"üst"):"";r["Yandan fotoğraf"]=w.side?photoName(b,d,"yan"):"";r["Not"]=w.note||"";out.push(r)}));
+  birdList().forEach(b=>days().forEach(d=>{const w=b.weeks?.["d"+d];if(!w)return;const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Gün":d,"Tarih":trDate(w.date),"Canlı ağırlık (g)":num(w.w)};ex.forEach(m=>r[flabel(m)]=ftype(m)==="text"?(w[m.k]||""):num(w[m.k]));r["Üstten alan (cm²)"]=num(w.area);r["Halka durumu"]=w.band||"";r["Üstten fotoğraf"]=w.top?photoName(b,d,"üst"):"";r["Yandan fotoğraf"]=w.side?photoName(b,d,"yan"):"";r["Not"]=w.note||"";out.push(r)}));
   return out;
 }
 async function exportXLSX(){
@@ -1185,6 +1197,8 @@ async function exportXLSX(){
   add("Et kalitesi",birdList().filter(b=>b.meat).map(b=>{const c=mCalc(b.meat);const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||""};FL("meat").forEach(f=>r[(f.g?f.g+": ":"")+flabel(f)]=ftype(f)==="text"?(b.meat[f.k]||""):num(b.meat[f.k]));r["Drip loss (%)"]=c.drip;r["Cooking loss (%)"]=c.cook;return r}));
   add("RNA-seq",birdList().filter(b=>b.rna||b.rnaseq).map(b=>{const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Seçildi":b.rna?"evet":""};FL("rna").forEach(f=>r[flabel(f)]=ftype(f)==="text"?(b.rnaseq?.[f.k]||""):num(b.rnaseq?.[f.k]));return r}));
   const q=[];birdList().forEach(b=>(b.rnaseq?.qpcr||[]).forEach(x=>q.push({"Kimlik":b.id,"Genotip":gname(b.geno),"Gen":x.gene,"Hedef Ct":num(x.ct),"Referans Ct":num(x.ref),"ΔCt":num(x.ct)!=null&&num(x.ref)!=null?num(x.ct)-num(x.ref):null})));add("qPCR",q);
+  add("Gompertz",birdList().map(b=>{const f=birdGomp(b);return f?{"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","A (g)":f.A,"k (1/gün)":f.k,"ti (gün)":f.ti,"Wi (g)":f.Wi,"Maks. büyüme hızı (g/gün)":f.MGR,"R²":f.r2,"Tartım sayısı":f.n}:null}).filter(Boolean));
+  const ap=areaPairs(null);add("Görüntü-ağırlık",ap.map(p=>({"Kimlik":p.b,"Genotip":gname(p.g),"Gün":p.d,"Alan (cm²)":p.a,"Canlı ağırlık (g)":p.y,"Tahmin (g)":predictW(p.g,p.a)})));
   const buf=X.write(wb,{type:"array",bookType:"xlsx"});
   await saveFile(`PiliçTakip_${todayISO()}.xlsx`,new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
 }
@@ -1209,6 +1223,161 @@ async function importJSON(){
   if(!d.birds){toast("Yedekte birey verisi yok");return}
   dlg(`<h3>Yedek geri yüklensin mi?</h3><p>${Object.keys(d.birds).length} birey, ${Object.keys(d.pens||{}).length} kümes kaydı. Aynı kimlikli kayıtların üzerine yazılır.</p>`,async()=>{await Store.bulkSet("birds",d.birds);await Store.bulkSet("pens",d.pens||{});if(d.config)await Store.patch("config/main",d.config);toast("Yedek yüklendi");render()},"Geri yükle",true);
 }
+
+/* ============ ANALİZ: Gompertz büyüme eğrisi ============ */
+function solve3(M,v){const a=M.map((r,i)=>[...r,v[i]]);for(let i=0;i<3;i++){let p=i;for(let j=i+1;j<3;j++)if(Math.abs(a[j][i])>Math.abs(a[p][i]))p=j;[a[i],a[p]]=[a[p],a[i]];if(Math.abs(a[i][i])<1e-12)return null;for(let j=0;j<3;j++){if(j===i)continue;const f=a[j][i]/a[i][i];for(let c=i;c<4;c++)a[j][c]-=f*a[i][c]}}return [a[0][3]/a[0][0],a[1][3]/a[1][1],a[2][3]/a[2][2]]}
+/* W(t) = A · exp(−exp(−k·(t − ti)))  — A: asimptotik ağırlık, k: büyüme hızı sabiti, ti: büküm noktası yaşı */
+const gomp=(p,t)=>p[0]*Math.exp(-Math.exp(-p[1]*(t-p[2])));
+function fitGompertz(pts){
+  pts=pts.filter(p=>p[1]!=null&&isFinite(p[1]));if(pts.length<4)return null;
+  const ys=pts.map(p=>p[1]),maxW=Math.max(...ys),ym=mean(ys),sst=ys.reduce((s,y)=>s+(y-ym)**2,0);
+  const lim=[maxW*1.02,maxW*12];
+  const clampP=p=>[Math.min(Math.max(p[0],lim[0]),lim[1]),Math.min(Math.max(p[1],0.003),0.3),Math.min(Math.max(p[2],1),150)];
+  const sse=p=>pts.reduce((s,[t,y])=>s+(y-gomp(p,t))**2,0);
+  let best=null;
+  for(const [fa,k0,t0] of [[2,0.04,35],[3,0.03,45],[1.4,0.06,28],[5,0.025,60]]){
+    let p=clampP([maxW*fa,k0,t0]),lam=1e-2,cur=sse(p);
+    for(let it=0;it<250;it++){
+      const JTJ=[[0,0,0],[0,0,0],[0,0,0]],JTr=[0,0,0];
+      for(const [t,y] of pts){const e=Math.exp(-p[1]*(t-p[2])),g=Math.exp(-e),J=[g,p[0]*g*e*(t-p[2]),-p[0]*g*e*p[1]],r=y-p[0]*g;for(let i=0;i<3;i++){JTr[i]+=J[i]*r;for(let j=0;j<3;j++)JTJ[i][j]+=J[i]*J[j]}}
+      const d=solve3(JTJ.map((r,i)=>r.map((v,j)=>i===j?v*(1+lam)+1e-9:v)),JTr);if(!d)break;
+      const np=clampP([p[0]+d[0],p[1]+d[1],p[2]+d[2]]),ns=sse(np);
+      if(ns<cur){const rel=(cur-ns)/(cur||1);p=np;cur=ns;lam=Math.max(lam/3,1e-7);if(rel<1e-10)break}else{lam*=4;if(lam>1e8)break}
+    }
+    if(!best||cur<best.sse)best={p,sse:cur};
+  }
+  const [A,k,ti]=best.p;
+  return {A,k,ti,Wi:A/Math.E,MGR:A*k/Math.E,r2:sst?1-best.sse/sst:null,n:pts.length,edge:A>=lim[1]*0.99||ti>=149};
+}
+const birdPts=b=>days().map(d=>[d,wOf(b,d)]).filter(p=>p[1]!=null);
+const gCache=new Map();
+function birdGomp(b){const pts=birdPts(b);if(pts.length<5)return null;const key=b.id+"|"+pts.map(p=>p.join(":")).join(",");if(!gCache.has(key))gCache.set(key,fitGompertz(pts));return gCache.get(key)}
+const gompCurve=(f,x0,x1)=>{const o=[];for(let t=x0;t<=x1;t++)o.push([t,gomp([f.A,f.k,f.ti],t)]);return o};
+
+/* ============ ANALİZ: fotoğraftan alan ve ağırlık ============ */
+/* Arka plan, kenar şeridinin medyan rengidir; ondan renkçe uzak pikseller Otsu eşiğiyle ayrılır, ortadaki en büyük leke birey kabul edilir. */
+function segmentBird(canvas){
+  const W=canvas.width,H=canvas.height,s=Math.min(1,500/Math.max(W,H)),w=Math.round(W*s),h=Math.round(H*s),N=w*h;
+  const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(canvas,0,0,w,h);
+  const img=x.getImageData(0,0,w,h),d=img.data;
+  const band=Math.max(2,Math.round(Math.min(w,h)*0.04)),R=[],Gc=[],B=[];
+  for(let y=0;y<h;y++)for(let i=0;i<w;i++){if(y>=band&&y<h-band&&i>=band&&i<w-band)continue;const o=(y*w+i)*4;R.push(d[o]);Gc.push(d[o+1]);B.push(d[o+2])}
+  const br=median(R),bgc=median(Gc),bb=median(B);
+  const dist=new Uint8Array(N),hist=new Array(256).fill(0);
+  for(let i=0;i<N;i++){const o=i*4,v=Math.min(255,Math.round(Math.hypot(d[o]-br,d[o+1]-bgc,d[o+2]-bb)/1.733));dist[i]=v;hist[v]++}
+  let sum=0;for(let i=0;i<256;i++)sum+=i*hist[i];let sB=0,wB=0,bestV=0,thr=40;
+  for(let i=0;i<256;i++){wB+=hist[i];if(!wB)continue;const wF=N-wB;if(!wF)break;sB+=i*hist[i];const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)**2;if(v>bestV){bestV=v;thr=i}}
+  thr=Math.max(thr,18);
+  const lab=new Int32Array(N).fill(-1),q=new Int32Array(N),comps=[];
+  for(let i=0;i<N;i++){
+    if(dist[i]<=thr||lab[i]!==-1)continue;
+    let qh=0,qt=0,n=0,edge=0,sx=0,sy=0;q[qt++]=i;lab[i]=comps.length;
+    while(qh<qt){const p=q[qh++],px=p%w,py=(p/w)|0;n++;sx+=px;sy+=py;if(px===0||py===0||px===w-1||py===h-1)edge++;
+      if(px>0){const nb=p-1;if(lab[nb]===-1&&dist[nb]>thr){lab[nb]=comps.length;q[qt++]=nb}}
+      if(px<w-1){const nb=p+1;if(lab[nb]===-1&&dist[nb]>thr){lab[nb]=comps.length;q[qt++]=nb}}
+      if(py>0){const nb=p-w;if(lab[nb]===-1&&dist[nb]>thr){lab[nb]=comps.length;q[qt++]=nb}}
+      if(py<h-1){const nb=p+w;if(lab[nb]===-1&&dist[nb]>thr){lab[nb]=comps.length;q[qt++]=nb}}}
+    comps.push({n,edge,cx:sx/n/w,cy:sy/n/h});
+  }
+  let bi=-1,bs=-1;
+  comps.forEach((k,i)=>{if(k.n<N*0.003)return;const cen=1-Math.min(1,Math.hypot(k.cx-.5,k.cy-.5)*1.6);const sc=k.n*(k.edge>k.n*0.02?0.15:1)*(0.5+cen);if(sc>bs){bs=sc;bi=i}});
+  if(bi<0)return null;
+  for(let i=0;i<N;i++){const o=i*4;if(lab[i]===bi){d[o]=Math.min(255,d[o]*0.4+150);d[o+1]=d[o+1]*0.5;d[o+2]=d[o+2]*0.4}else{d[o]*=0.3;d[o+1]*=0.3;d[o+2]*=0.3}}
+  x.putImageData(img,0,0);
+  return {px:comps[bi].n/(s*s),share:comps[bi].n/N,preview:c.toDataURL("image/jpeg",0.7),longSide:Math.max(W,H)};
+}
+function areaCm2(seg){const c=ST.config.calib;if(!seg||!c||!num(c.pxPerCm))return null;const ppc=num(c.pxPerCm)*seg.longSide/(num(c.longSide)||1600);return seg.px/(ppc*ppc)}
+function areaPairs(g){const o=[];birdList().forEach(b=>{if(g&&b.geno!==g)return;days().forEach(d=>{const w=b.weeks?.["d"+d];const a=num(w?.area),y=num(w?.w);if(a>0&&y>0)o.push({a,y,b:b.id,d,g:b.geno})})});return o}
+function fitLog(pairs){if(pairs.length<3)return null;const X=pairs.map(p=>Math.log(p.a)),Y=pairs.map(p=>Math.log(p.y)),mx=mean(X),my=mean(Y);let sxy=0,sxx=0;X.forEach((x,i)=>{sxy+=(x-mx)*(Y[i]-my);sxx+=(x-mx)**2});if(!sxx)return null;const b=sxy/sxx;return {a:my-b*mx,b}}
+/* ln(ağırlık) = a + b · ln(alan); doğrulama, bireyler 5 kata bölünerek yapılır (aynı bireyin haftaları aynı katta kalır) */
+function fitArea(pairs){
+  if(pairs.length<5)return null;const m=fitLog(pairs);if(!m)return null;
+  const pred=pairs.map(p=>Math.exp(m.a+m.b*Math.log(p.a))),ym=mean(pairs.map(p=>p.y));
+  const sst=pairs.reduce((s,p)=>s+(p.y-ym)**2,0),sse=pairs.reduce((s,p,i)=>s+(p.y-pred[i])**2,0);
+  const ids=[...new Set(pairs.map(p=>p.b))],ape=[];
+  if(ids.length>=5)for(let f=0;f<5;f++){const te=new Set(ids.filter((_,i)=>i%5===f));const mm=fitLog(pairs.filter(p=>!te.has(p.b)));if(!mm)continue;pairs.filter(p=>te.has(p.b)).forEach(p=>ape.push(Math.abs(Math.exp(mm.a+mm.b*Math.log(p.a))-p.y)/p.y))}
+  return {...m,r2:sst?1-sse/sst:null,rmse:Math.sqrt(sse/pairs.length),mape:mean(pairs.map((p,i)=>Math.abs(p.y-pred[i])/p.y))*100,cvMape:ape.length?mean(ape)*100:null,n:pairs.length,birds:ids.length};
+}
+function predictW(g,area){if(!(area>0))return null;const m=fitArea(areaPairs(g))||fitArea(areaPairs(null));return m?Math.exp(m.a+m.b*Math.log(area)):null}
+function scatterChart({groups,xLabel,yLabel}){
+  const mw=($("#main")?.clientWidth||680)-34,w=Math.max(300,Math.min(760,mw)),h=w<500?230:280,pad={l:56,r:16,t:16,b:34};
+  let xmax=0,ymax=0;groups.forEach(g=>g.pts.forEach(([x,y])=>{xmax=Math.max(xmax,x);ymax=Math.max(ymax,y)}));if(!xmax||!ymax)return "";
+  const xs=niceStep(xmax/4),ys=niceStep(ymax/4);xmax=Math.ceil(xmax/xs)*xs;ymax=Math.ceil(ymax/ys)*ys;
+  const X=v=>pad.l+v/xmax*(w-pad.l-pad.r),Y=v=>h-pad.b-v/ymax*(h-pad.t-pad.b);
+  let s=`<g class="grid">`;for(let v=0;v<=ymax+1e-9;v+=ys)s+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${pad.l-6}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`;
+  for(let v=0;v<=xmax+1e-9;v+=xs)s+=`<text x="${X(v)}" y="${h-14}" text-anchor="middle">${fmt(v)}</text>`;
+  s+=`<text x="${w-pad.r}" y="${h-2}" text-anchor="end" style="font-size:11px">${esc(xLabel)}</text><text x="6" y="11" style="font-size:11px">${esc(yLabel)}</text></g>`;
+  groups.forEach(g=>{g.pts.forEach(([x,y])=>s+=`<circle cx="${X(x).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="2.6" fill="${g.color}" fill-opacity=".55"/>`);
+    if(g.curve&&g.curve.length)s+=`<path d="${g.curve.filter(p=>p[0]<=xmax&&p[1]<=ymax).map((p,i)=>(i?"L":"M")+X(p[0]).toFixed(1)+","+Y(p[1]).toFixed(1)).join("")}" fill="none" stroke="${g.color}" stroke-width="2.2"/>`});
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Alan ve ağırlık ilişkisi">${s}</svg>`;
+}
+async function imageCanvas(src){const r=await fetch(src);if(!r.ok)throw new Error("Fotoğraf alınamadı");const bm=await createImageBitmap(await r.blob());const c=document.createElement("canvas");const s=Math.min(1,1600/Math.max(bm.width,bm.height));c.width=Math.round(bm.width*s);c.height=Math.round(bm.height*s);c.getContext("2d").drawImage(bm,0,0,c.width,c.height);return c}
+async function recomputeAreas(){
+  if(!ST.config.calib?.pxPerCm){toast("Önce kalibrasyon yap");return}
+  let done=0,fail=0;const jobs=[];
+  birdList().forEach(b=>days().forEach(d=>{const w=b.weeks?.["d"+d];if(w?.top&&!/^demo:/.test(w.top))jobs.push([b,d,w.top])}));
+  if(!jobs.length){toast("Üstten çekilmiş fotoğraf yok");return}
+  const byBird={};
+  for(const [b,d,ref] of jobs){
+    toast(`Alanlar hesaplanıyor ${done+fail+1}/${jobs.length}`,8000);
+    try{const seg=segmentBird(await imageCanvas(photoSrc(ref)));const a=areaCm2(seg);if(a){(byBird[b.id]=byBird[b.id]||{})["d"+d]={area:Math.round(a*10)/10,areaPx:Math.round(seg.px)};done++}else fail++}catch(e){fail++}
+  }
+  for(const [id,weeks] of Object.entries(byBird))await Store.patch("birds/"+id,{weeks});
+  toast(`${done} fotoğrafın alanı hesaplandı${fail?`, ${fail} fotoğraf okunamadı`:""}`,5000);render();
+}
+function calibDlg(){
+  pickFile("#filePhoto","image/*").then(async f=>{
+    if(!f)return;const {canvas}=await compress(f,1600);
+    dlg(`<h3>Kalibrasyon</h3><p class="small">Fotoğrafta uzunluğunu bildiğin iki noktaya sırayla dokun (örneğin cetvelde 0 ve 10 cm, ya da 5 cm'lik karenin iki köşesi).</p>
+      <div style="position:relative"><canvas id="calC" style="width:100%;border-radius:6px;touch-action:manipulation"></canvas></div>
+      <label class="f"><span>İki nokta arasındaki gerçek uzunluk (cm)</span><input class="i num" id="calCm" inputmode="decimal" value="10"></label>
+      <p class="small muted" id="calInfo">0/2 nokta seçildi</p>`,
+    async()=>{const pts=calibDlg.pts||[];const cm=num(val("calCm"));if(pts.length<2||!(cm>0)){toast("İki nokta seç ve uzunluğu yaz");return false}
+      const px=Math.hypot(pts[0][0]-pts[1][0],pts[0][1]-pts[1][1]);
+      await Store.patch("config/main",{calib:{pxPerCm:Math.round(px/cm*100)/100,longSide:Math.max(canvas.width,canvas.height),date:todayISO()}});toast("Kalibrasyon kaydedildi");render()},"Kaydet");
+    const cv=$("#calC");cv.width=canvas.width;cv.height=canvas.height;const x=cv.getContext("2d");calibDlg.pts=[];
+    const draw=()=>{x.drawImage(canvas,0,0);x.lineWidth=Math.max(3,cv.width/250);x.strokeStyle="#ff3b30";x.fillStyle="#ff3b30";calibDlg.pts.forEach(p=>{x.beginPath();x.arc(p[0],p[1],x.lineWidth*3,0,7);x.fill()});if(calibDlg.pts.length===2){x.beginPath();x.moveTo(...calibDlg.pts[0]);x.lineTo(...calibDlg.pts[1]);x.stroke()}};
+    draw();
+    cv.onclick=e=>{const r=cv.getBoundingClientRect(),p=[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height];if(calibDlg.pts.length>=2)calibDlg.pts=[];calibDlg.pts.push(p);draw();
+      $("#calInfo").textContent=calibDlg.pts.length===2?`${fmt(Math.hypot(calibDlg.pts[0][0]-calibDlg.pts[1][0],calibDlg.pts[0][1]-calibDlg.pts[1][1]))} piksel`:`${calibDlg.pts.length}/2 nokta seçildi`};
+  });
+}
+
+/* ============ ANALİZ sekmesi ============ */
+function viewAnaliz(){
+  const gs=Object.keys(G()),colOf=g=>cssv(g==="AT"?"--at":g==="RS"?"--rs":"--accent"),ds=days(),x1=Math.max(...ds);
+  const gom=gs.map(g=>{const bs=birdList().filter(b=>b.geno===g);const pooled=fitGompertz(bs.flatMap(birdPts));const ind=bs.map(birdGomp).filter(Boolean);return {g,pooled,ind}});
+  const ser=[];gom.forEach(r=>{ser.push({pts:ds.map(d=>[d,genoMeans(r.g,d)]),color:colOf(r.g),dots:1,wd:0.01});if(r.pooled)ser.push({pts:gompCurve(r.pooled,0,x1),color:colOf(r.g),wd:2.2})});
+  const ms=(arr,k,dg)=>{const a=arr.map(f=>f[k]);return a.length?`${fmt(mean(a),dg)} ± ${fmt(sd(a),dg)}`:"—"};
+  const cal=ST.config.calib;
+  const ar=gs.map(g=>({g,pairs:areaPairs(g)})).map(r=>({...r,fit:fitArea(r.pairs)}));
+  const all=fitArea(areaPairs(null));
+  const amax=Math.max(1,...ar.flatMap(r=>r.pairs.map(p=>p.a)));
+  return `<section class="stack">
+    <h2>Analiz</h2>
+    <div class="card stack"><h3>Büyüme eğrisi (Gompertz)</h3>
+      <p class="small muted">W(t) = A · exp(−exp(−k · (t − ti))). A asimptotik ağırlık, k büyüme hızı sabiti, ti büküm noktası yaşı; büküm noktasındaki ağırlık A/e, maksimum büyüme hızı A·k/e'dir. Her bireye en az 5 tartımla ayrı eğri uydurulur.</p>
+      ${ser.some(s=>s.pts.some(p=>p[1]!=null))?lineChart({series:ser})+`<div class="legend">${gs.map(g=>`<span><i style="border-color:${colOf(g)}"></i>${esc(gname(g))}: noktalar günlük ortalama, çizgi Gompertz</span>`).join("")}</div>`:`<div class="empty">Tartımlar girildikçe eğriler burada çizilecek.</div>`}
+      <div class="tablewrap"><table class="t"><thead><tr><th>Genotip</th><th>Uydurma</th><th class="n">n</th><th class="n">A (g)</th><th class="n">k (1/gün)</th><th class="n">ti (gün)</th><th class="n">Wi (g)</th><th class="n">Maks. hız (g/gün)</th><th class="n">R²</th></tr></thead><tbody>
+      ${gom.map(r=>`<tr><td><b>${esc(gname(r.g))}</b></td><td>Tüm tartımlar</td><td class="n">${r.pooled?r.pooled.n:0}</td><td class="n">${r.pooled?fmt(r.pooled.A):"—"}</td><td class="n">${r.pooled?fmt(r.pooled.k,4):"—"}</td><td class="n">${r.pooled?fmt(r.pooled.ti,1):"—"}</td><td class="n">${r.pooled?fmt(r.pooled.Wi):"—"}</td><td class="n">${r.pooled?fmt(r.pooled.MGR,1):"—"}</td><td class="n">${r.pooled?fmt(r.pooled.r2,3):"—"}</td></tr>
+        <tr><td></td><td>Bireylerin ort. ± SS</td><td class="n">${r.ind.length}</td><td class="n">${ms(r.ind,"A",0)}</td><td class="n">${ms(r.ind,"k",4)}</td><td class="n">${ms(r.ind,"ti",1)}</td><td class="n">${ms(r.ind,"Wi",0)}</td><td class="n">${ms(r.ind,"MGR",1)}</td><td class="n">${ms(r.ind,"r2",3)}</td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="ref">Tartımlar 42. günde bittiği için A ve ti eğrinin dışına uzatılarak tahmin edilir; genotipleri karşılaştırırken k, ti ve maksimum büyüme hızını öne çıkar. Birey parametreleri Excel'deki "Gompertz" sayfasında, istatistik testi için hazır.</p>
+    </div>
+    <div class="card stack"><h3>Fotoğraftan ağırlık tahmini</h3>
+      <p class="small muted">Üstten fotoğrafta bireyin kapladığı alan (cm²) ölçülür ve ln(ağırlık) = a + b · ln(alan) modeli genotip başına kurulur (Küçüktopçu ve ark. 2025). Fotoğraflar hep aynı yükseklikten, tek renk zeminde çekilmelidir.</p>
+      <div class="row"><span class="pill ${cal?.pxPerCm?"ok":"warn"}">${cal?.pxPerCm?`Kalibrasyon: ${fmt(num(cal.pxPerCm),1)} piksel/cm · ${esc(trDate(cal.date))}`:"Kalibrasyon yapılmadı"}</span>
+        <button class="btn" id="calBtn">Kalibrasyon fotoğrafı çek</button><button class="btn" id="recBtn" ${cal?.pxPerCm?"":"disabled"}>Kayıtlı fotoğraflardan alanı hesapla</button></div>
+      <p class="ref">Kalibrasyon: telefon tutucuyu ayarladıktan sonra kabın içine cetvel ya da 5 × 5 cm kare koyup bir fotoğraf çek ve iki noktaya dokun. Telefonun yüksekliği değişirse kalibrasyonu yenile.</p>
+      ${ar.some(r=>r.pairs.length)?scatterChart({groups:ar.map(r=>({pts:r.pairs.map(p=>[p.a,p.y]),color:colOf(r.g),curve:r.fit?Array.from({length:60},(_,i)=>{const a=amax*(i+1)/60;return [a,Math.exp(r.fit.a+r.fit.b*Math.log(a))]}):null})),xLabel:"alan (cm²)",yLabel:"ağırlık (g)"})+`<div class="legend">${gs.map(g=>`<span><i style="border-color:${colOf(g)}"></i>${esc(gname(g))}</span>`).join("")}</div>`:`<div class="empty">Alanı ölçülmüş ve tartılmış fotoğraf yok. Kalibrasyondan sonra çekilen üstten fotoğrafların alanı otomatik ölçülür.</div>`}
+      <div class="tablewrap"><table class="t"><thead><tr><th>Model</th><th class="n">n (birey)</th><th class="n">a</th><th class="n">b</th><th class="n">R²</th><th class="n">RMSE (g)</th><th class="n">MAPE (%)</th><th class="n">Çapraz doğrulama MAPE (%)</th></tr></thead><tbody>
+      ${[...ar.map(r=>[gname(r.g),r.fit]),["Tüm bireyler",all]].map(([nm,f])=>`<tr><td><b>${esc(nm)}</b></td><td class="n">${f?`${f.n} (${f.birds})`:"—"}</td><td class="n">${f?fmt(f.a,3):"—"}</td><td class="n">${f?fmt(f.b,3):"—"}</td><td class="n">${f?fmt(f.r2,3):"—"}</td><td class="n">${f?fmt(f.rmse,0):"—"}</td><td class="n">${f?fmt(f.mape,1):"—"}</td><td class="n">${f&&f.cvMape!=null?fmt(f.cvMape,1):"—"}</td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="ref">Çapraz doğrulamada bireyler 5 gruba ayrılır; model, test grubundaki bireyleri hiç görmeden kurulur. Genotip modellerinin b eğimleri belirgin farklıysa, tek ortak model diğer genotipte ağırlığı sistematik olarak kaydırır; yan makalenin ana sorusu budur.</p>
+    </div>
+  </section>`;
+}
+BIND.analiz=()=>{$("#calBtn").onclick=calibDlg;$("#recBtn").onclick=recomputeAreas};
 
 /* ============ GİRİŞ EKRANI ============ */
 function viewGate(){
@@ -1342,7 +1511,7 @@ function loadDemo(){
     const b={id,geno:g,pen:p,sex,status:"aktif",wing:String(1000+(g==="RS"?0:200)+k),weeks:{}};
     const dieAt=rnd()<0.035?ds[1+Math.floor(rnd()*5)]:null;
     ds.forEach((d,j)=>{if(dieAt!=null&&d>=dieAt)return;const w=Math.round(curve[g][j]*f*(1+gauss()*0.015));
-      const wk={w:String(w),date:iso(d),band:d===14?"Değiştirildi":"Uygun",top:"demo:"+id+":"+d,shankLen:String(Math.round((22+d*1.6)*(g==="RS"?1.05:1))),shankDia:(4.5+d*0.22*(g==="RS"?1.1:1)).toFixed(1),backLen:(5+d*0.33).toFixed(1),backWid:(3+d*0.2*(g==="RS"?1.12:1)).toFixed(1)};
+      const wk={w:String(w),area:String(Math.round(0.95*Math.pow(w,(g==="RS"?0.70:0.73))*(1+gauss()*0.04)*10)/10),date:iso(d),band:d===14?"Değiştirildi":"Uygun",top:"demo:"+id+":"+d,shankLen:String(Math.round((22+d*1.6)*(g==="RS"?1.05:1))),shankDia:(4.5+d*0.22*(g==="RS"?1.1:1)).toFixed(1),backLen:(5+d*0.33).toFixed(1),backWid:(3+d*0.2*(g==="RS"?1.12:1)).toFixed(1)};
       if(d>=28){wk.gait=String(Math.min(5,Math.max(0,Math.round((g==="RS"?1.4:0.7)+gauss()*0.8))));wk.fpd=String(Math.min(4,Math.max(0,Math.round((g==="RS"?1:0.5)+gauss()*0.7))));wk.hock=String(Math.max(0,Math.round(0.3+gauss()*0.5)))}
       b.weeks["d"+d]=wk});
     if(dieAt!=null){b.status="öldü";b.deathDay=dieAt-1-Math.floor(rnd()*5);b.deathW=Math.round(curve[g][ds.indexOf(dieAt)-1]*f*1.1)}
@@ -1354,7 +1523,7 @@ function loadDemo(){
   for(let p=1;p<=6;p++){const g=p<=3?"RS":"AT",weeks={};const fc={RS:[0,1.0,1.25,1.45,1.6,1.72,1.82],AT:[0,1.05,1.32,1.55,1.72,1.86,1.98]}[g];
     ds.forEach((d,j)=>{if(!j)return;const ms=Object.values(birds).filter(b=>b.pen===p);const m1=mean(ms.map(b=>wOf(b,d))),m0=mean(ms.map(b=>wOf(b,ds[j-1])));const gain=(m1-m0)*ms.filter(b=>wOf(b,d)!=null).length/1000;weeks["d"+d]={feed:(gain*fc[j]*1.02+0.4).toFixed(1),left:"0.4",temp:String(33-j*2),rh:String(55+j)}});
     pens["B"+p]={pen:p,geno:g,weeks}}
-  ST.mode="demo";ST.birds=birds;ST.pens=pens;ST.config=deepMerge(clone(CONFIG_DEFAULT),{startDate:iso(0),trial:"ÖRNEK · Anadolu-T × Ross 308"});ST.rna={};DEG=null;ST.loaded=true;
+  ST.mode="demo";ST.birds=birds;ST.pens=pens;ST.config=deepMerge(clone(CONFIG_DEFAULT),{startDate:iso(0),trial:"ÖRNEK · Anadolu-T × Ross 308",calib:{pxPerCm:20,longSide:1600,date:iso(0)}});ST.rna={};DEG=null;ST.loaded=true;
   if(!ST.role){ST.role="owner"}ST.canWrite=true;
   toast("Örnek veri yüklendi");setView("okut");
 }
