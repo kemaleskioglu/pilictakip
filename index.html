@@ -1189,7 +1189,7 @@ function viewSettings(){
     <div class="seg" role="group"><button data-qm="url" aria-pressed="${c.qrMode!=="id"}">Bağlantılı (önerilen)</button><button data-qm="id" aria-pressed="${c.qrMode==="id"}">Yalnız numara</button></div>
     ${c.qrMode!=="id"?`<ol class="steps"><li>QR, bu sayfanın bağlantısını ve bireyin numarasını taşır.</li><li>Telefonun kendi kamerasını aç, QR'a tut, çıkan bağlantıya dokun: KümesTakip o bireyin kartıyla açılır.</li><li>Açılan sayfada "Ziyaretçi" ya da "Kullanıcı" seçilir. Sayfayı ana ekrana eklersen (Paylaş → Ana Ekrana Ekle) daha hızlı açılır.</li><li>Etiket en az 15 mm olmalı; 16–18 mm rahat okunur.</li></ol>
     ${SITE_URL?`<p class="small">QR'lardaki bağlantı: <span class="mono" style="word-break:break-all">${esc(SITE_URL)}</span></p>`:`<p class="banner">Bu sayfa henüz internette yayında değil. QR'ları sayfa yayınlandıktan sonra, yayındaki adresten bas.</p>`}`:`<p class="ref">Yalnız numara: kod küçük kalır (12 mm yeter) ama telefon kamerası kartı açmaz; Okut sekmesindeki "Etiketin fotoğrafını çek" düğmesi gerekir.</p>`}
-    <div class="row"><label class="f" style="width:150px"><span>QR boyutu (mm)</span><input class="i num" id="qrSize" value="${c.qrMode!=="id"?16:12}" inputmode="decimal"></label><button class="btn primary" id="pdfBtn" ${n?"":"disabled"}>Etiket sayfasını indir (PDF)</button></div>
+    <div class="row"><label class="f" style="width:150px"><span>QR boyutu (mm)</span><input class="i num" id="qrSize" value="${c.qrMode!=="id"?16:12}" inputmode="decimal"></label><button class="btn primary" id="pdfBtn" ${n?"":"disabled"}>Birey etiketlerini indir (PDF)</button><button class="btn" id="penPosterS" type="button">Kümes kapısı afişlerini indir (PDF)</button></div>
     ${first?`<div class="row"><div style="width:110px;border-radius:6px;overflow:hidden">${qrSVG(qrText(first.id))}</div><span class="small muted">Örnek: ${esc(first.id)}<br><span class="mono" style="word-break:break-all">${esc(qrText(first.id))}</span></span></div>`:""}
   </div>
 
@@ -1225,7 +1225,7 @@ BIND.ayar=()=>{
     document.querySelector(`[data-ferst="${grp}"]`).onclick=()=>dlg(`<h3>${esc(GROUPS[grp])} varsayılana dönsün mü?</h3><p class="small">Adlar ve sıra ilk hâline döner, eklediğin ölçümler listeden çıkar. Girilmiş veriler silinmez.</p>`,async()=>{ST.openFE=grp;await Store.patch("config/main",{fields:{[grp]:defaultFields(grp)}});clearDirty("fe-"+grp);toast("Varsayılana dönüldü");render()},"Varsayılana dön",true);
   });
   document.querySelectorAll("[data-qm]").forEach(b=>b.onclick=async()=>{await Store.patch("config/main",{qrMode:b.dataset.qm});render()});
-  $("#mkBirds").onclick=makeBirds;$("#impBirds").onclick=importBirds;$("#pdfBtn").onclick=labelPDF;
+  $("#mkBirds").onclick=makeBirds;$("#penPosterS").onclick=penPosterPDF;$("#impBirds").onclick=importBirds;$("#pdfBtn").onclick=labelPDF;
   $("#xlsxBtn").onclick=exportXLSX;$("#zipBtn").onclick=exportZIP;$("#jsonBtn").onclick=exportJSON;$("#jsonIn").onclick=importJSON;
   $("#logoutBtn").onclick=logout;
   const ib=$("#installBtn");if(ib)ib.onclick=async()=>{installEvt.prompt();const r=await installEvt.userChoice.catch(()=>null);installEvt=null;if(r?.outcome==="accepted")toast("Uygulama kuruldu");render()};
