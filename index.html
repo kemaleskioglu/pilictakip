@@ -1247,7 +1247,7 @@ function bindGate(){
     e.preventDefault();const btn=e.submitter||$("#gForm button");btn.disabled=true;$("#gErr").textContent="";
     const ok=await login($("#gPw").value).catch(()=>false);
     btn.disabled=false;
-    if(!ok){$("#gErr").textContent="Şifre yanlış ya da bağlantı yok.";$("#gPw").value="";$("#gPw").focus();return}
+    if(!ok){$("#gErr").textContent="Şifre yanlış. İlk kez giriyorsan önce aşağıdaki \"Şifreni belirle\" bağlantısına bas.";$("#gPw").value="";$("#gPw").focus();return}
     if(ST.want&&ST.loaded)tryWanted();else render();
   };
   $("#gFirst").onclick=()=>{$("#gForm").hidden=true;$("#gSet").hidden=false;$("#gNew1").focus()};
