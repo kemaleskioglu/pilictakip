@@ -111,6 +111,9 @@ details.sec .body{padding:0 16px 16px;display:flex;flex-direction:column;gap:12p
 
 .tag{display:inline-flex;align-items:center;font-family:var(--mono);font-weight:600;font-size:.95rem;padding:1px 8px;border-radius:5px;border:2px solid var(--muted);white-space:nowrap}
 .tag.AT{border-color:var(--at);background:var(--at-soft)} .tag.RS{border-color:var(--rs);background:var(--rs-soft)}
+.tag .pk{margin-left:6px;padding:0 5px;border-radius:4px;background:var(--surface);color:var(--fg);font-family:var(--body);font-size:.72em;font-weight:700;line-height:1.5;border:1px solid var(--line)}
+.tag.xl .pk{display:none}
+.penbig{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:1rem}
 .tag.xl{align-self:flex-start;font-size:1.9rem;font-weight:700;padding:2px 14px;border-width:3px;border-radius:8px}
 .pill{display:inline-block;font-size:.78rem;padding:2px 9px;border-radius:999px;background:var(--sunk);color:var(--muted)}
 .pill.ok{background:var(--accent-soft);color:var(--accent)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
@@ -511,6 +514,8 @@ const FON=grp=>FL(grp).filter(f=>f.on!==false);
 const ftype=f=>f.opts&&f.opts.length?"score":f.t==="text"?"text":"num";
 const bandOpts=()=>[""].concat(String(ST.config.bandOpts||"").split(",").map(s=>s.trim()).filter(Boolean));
 const flabel=f=>f.l+(f.u?` (${f.u})`:"");
+const pk=b=>b&&b.pen!=null&&b.pen!==""?`<span class="pk" title="Kümes ${esc(b.pen)}">K${esc(b.pen)}</span>`:"";
+const penBig=b=>b&&b.pen!=null&&b.pen!==""?`<span class="penbig"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11 12 4l9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg>Kümes ${esc(b.pen)}</span>`:"";
 
 /* ============ fotoğraf ve QR ============ */
 const urlCache={};
@@ -708,7 +713,7 @@ BIND.okut=()=>{
   $("#manualForm").onsubmit=e=>{e.preventDefault();openBird($("#manualId").value)};
   $("#todoBtn").onclick=()=>{
     const d=nearestDay();const l=birdList().filter(b=>alive(b,d)&&wOf(b,d)==null);
-    $("#todo").innerHTML=l.length?`<div class="row" style="margin-top:10px">${l.slice(0,400).map(b=>`<button class="tag ${esc(b.geno)}" data-open="${esc(b.id)}" style="cursor:pointer">${esc(b.id)}</button>`).join("")}</div>`:`<p class="muted">Bu günün tüm canlı bireyleri tartıldı.</p>`;
+    $("#todo").innerHTML=l.length?`<div class="row" style="margin-top:10px">${l.slice(0,400).map(b=>`<button class="tag ${esc(b.geno)}" data-open="${esc(b.id)}" style="cursor:pointer">${esc(b.id)}${pk(b)}</button>`).join("")}</div>`:`<p class="muted">Bu günün tüm canlı bireyleri tartıldı.</p>`;
     document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open));
   };
 };
@@ -768,7 +773,7 @@ function viewBird(b){
   const ex=FON("weekly"),exp=expectedW(b,d),st=b.status||"aktif";
   const head=`<section class="card stack">
     <div class="row" style="justify-content:space-between;align-items:flex-start">
-      <div class="stack" style="gap:8px"><span class="tag xl ${esc(g)}">${esc(b.id)}</span>
+      <div class="stack" style="gap:8px"><div class="row" style="gap:10px"><span class="tag xl ${esc(g)}">${esc(b.id)}</span>${penBig(b)}</div>
         <div class="row small"><b>${esc(gname(g))}</b><span>Kümes ${esc(b.pen)}</span><span>Kanat no: <span class="mono">${esc(b.wing||"—")}</span></span><span>Cinsiyet: ${esc(b.sex||"belirsiz")}</span>
         <span class="pill ${st==="aktif"?"ok":st==="öldü"?"bad":""}">${esc(st)}${st==="öldü"&&b.deathDay!=null?` · ${esc(b.deathDay)}. gün`:""}</span>${b.rna?`<span class="pill warn">RNA-seq</span>`:""}</div></div>
       ${rw?`<button class="btn" id="editBird">Kimliği düzenle</button>`:""}
@@ -947,7 +952,7 @@ function viewBirds(){
       <select class="i" id="fs" style="width:auto"><option value="">Tüm durumlar</option>${["aktif","öldü","kesildi","çıkarıldı"].map(s=>`<option ${f.s===s?"selected":""}>${s}</option>`).join("")}</select>
     </div>
     <div class="tablewrap"><table class="t"><thead><tr><th>Kimlik</th><th>Kümes</th><th>Cinsiyet</th><th>Durum</th>${ds.map(x=>`<th class="n">${x}. gün</th>`).join("")}<th class="n">Fotoğraf</th></tr></thead><tbody>
-    ${l.map(b=>`<tr class="click" data-open="${esc(b.id)}"><td><span class="tag ${esc(b.geno)}">${esc(b.id)}</span>${b.rna?` <span class="pill warn">RNA</span>`:""}</td><td>${esc(b.pen)}</td><td>${esc(b.sex||"")}</td><td>${esc(b.status||"aktif")}</td>${ds.map(x=>`<td class="n">${fmt(wOf(b,x))}</td>`).join("")}<td class="n">${Object.values(b.weeks||{}).filter(w=>w.top).length}</td></tr>`).join("")}
+    ${l.map(b=>`<tr class="click" data-open="${esc(b.id)}"><td><span class="tag ${esc(b.geno)}">${esc(b.id)}${pk(b)}</span>${b.rna?` <span class="pill warn">RNA</span>`:""}</td><td>${esc(b.pen)}</td><td>${esc(b.sex||"")}</td><td>${esc(b.status||"aktif")}</td>${ds.map(x=>`<td class="n">${fmt(wOf(b,x))}</td>`).join("")}<td class="n">${Object.values(b.weeks||{}).filter(w=>w.top).length}</td></tr>`).join("")}
     </tbody></table></div></section>`;
 }
 BIND.bireyler=()=>{
@@ -1018,7 +1023,7 @@ function viewMeat(){
       ${vis.map(r=>`<tr><td>${esc(r[0])}</td>${gs.map(g=>{const a=done.filter(b=>b.geno===g).map(r[1]).filter(x=>x!=null);return `<td class="n">${a.length?fmt(mean(a),r[2])+" ± "+fmt(sd(a),r[2])+` <span class="muted">(${a.length})</span>`:"—"}</td>`}).join("")}</tr>`).join("")}
       </tbody></table></div><p class="ref">Tanımlayıcı özettir. Karşılaştırma için Excel'e aktarıp genotip ve cinsiyet sabit, kümes rastgele etkili karma model kur.</p></div>
     <div class="card"><h3>Birey bazında</h3><div class="tablewrap"><table class="t"><thead><tr><th>Kimlik</th><th>Cinsiyet</th>${vis.map(r=>`<th class="n">${esc(r[0])}</th>`).join("")}</tr></thead><tbody>
-      ${done.map(b=>`<tr class="click" data-open="${esc(b.id)}"><td><span class="tag ${esc(b.geno)}">${esc(b.id)}</span></td><td>${esc(b.sex||"")}</td>${vis.map(r=>`<td class="n">${fmt(r[1](b),r[2])}</td>`).join("")}</tr>`).join("")}
+      ${done.map(b=>`<tr class="click" data-open="${esc(b.id)}"><td><span class="tag ${esc(b.geno)}">${esc(b.id)}${pk(b)}</span></td><td>${esc(b.sex||"")}</td>${vis.map(r=>`<td class="n">${fmt(r[1](b),r[2])}</td>`).join("")}</tr>`).join("")}
       </tbody></table></div></div>`:`<div class="empty">Kesim yapılınca ortalamalar ve birey tablosu burada görünecek.</div>`}
   </section>`;
 }
@@ -1116,7 +1121,7 @@ function suggestRna(){
     pick.push({g,md,sel});
   });
   const any=pick.some(p=>p.sel.length);
-  dlg(`<h3>Önerilen RNA-seq bireyleri</h3>${any?pick.map(p=>`<p><b>${esc(gname(p.g))}</b>, medyan ${fmt(p.md)} g<br>${p.sel.map(x=>`<span class="tag ${esc(p.g)}">${esc(x.b.id)}</span> <span class="small muted">${fmt(x.w)} g · Kümes ${esc(x.b.pen)}</span>`).join("<br>")}</p>`).join(""):`<p class="muted">Cinsiyeti "erkek" girilmiş ve son günü tartılmış birey yok.</p>`}`,
+  dlg(`<h3>Önerilen RNA-seq bireyleri</h3>${any?pick.map(p=>`<p><b>${esc(gname(p.g))}</b>, medyan ${fmt(p.md)} g<br>${p.sel.map(x=>`<span class="tag ${esc(p.g)}">${esc(x.b.id)}${pk(x.b)}</span> <span class="small muted">${fmt(x.w)} g · Kümes ${esc(x.b.pen)}</span>`).join("<br>")}</p>`).join(""):`<p class="muted">Cinsiyeti "erkek" girilmiş ve son günü tartılmış birey yok.</p>`}`,
   any?async()=>{for(const p of pick)for(const x of p.sel)await Store.patch("birds/"+x.b.id,{rna:true});toast("RNA-seq bireyleri işaretlendi");render()}:null,"Bu bireyleri işaretle");
 }
 
@@ -1289,7 +1294,7 @@ async function labelPDF(){
     doc.setFillColor(0,0,0);
     for(let r=0;r<n;r++){let c=0;while(c<n){if(!q.isDark(r,c)){c++;continue}let e=c;while(e<n&&q.isDark(r,e))e++;doc.rect(x+1+(c+2)*m,y+2+(r+2)*m,(e-c)*m+0.01,m+0.01,"F");c=e}}
     doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text(b.id,x+qs+3,y+ch/2);
-    doc.setFont("helvetica","normal");doc.setFontSize(6.5);doc.text("Kümes "+b.pen,x+qs+3,y+ch/2+3.5);
+    doc.setFont("helvetica","bold");doc.setFontSize(8.5);doc.text("Kümes "+b.pen,x+qs+3,y+ch/2+4.2);
     i++;
   }
   await saveFile("QR_etiketleri.pdf",doc.output("blob"));
@@ -1545,7 +1550,7 @@ function viewGate(){
     ${heroSVG()}
     <div class="logo">Kümes<b style="color:var(--accent)">Takip</b></div>
     <p class="muted" style="margin:0">Bireysel kanatlı takip</p>
-    ${w?(/^K\d{1,3}$/.test(w)&&!ST.birds[w]?`<p style="margin:0">Okutulan: <b>Kümes ${esc(w.slice(1))}</b></p>`:`<p style="margin:0">Okutulan birey: <span class="tag ${esc(ST.birds[w]?.geno||"")}">${esc(w)}</span></p>`):""}
+    ${w?(/^K\d{1,3}$/.test(w)&&!ST.birds[w]?`<p style="margin:0">Okutulan: <b>Kümes ${esc(w.slice(1))}</b></p>`:`<p style="margin:0">Okutulan birey: <span class="tag ${esc(ST.birds[w]?.geno||"")}">${esc(w)}${pk(ST.birds[w])}</span></p>`):""}
     <button class="btn primary big" id="gVisitor">Ziyaretçi olarak gir</button>
     <button class="btn big" id="gUser">Kullanıcı olarak gir</button>
     <form id="gForm" class="stack" hidden autocomplete="on">
@@ -1605,7 +1610,7 @@ function viewVisitorList(){
     ${heroSVG("hero-band",150)}
     <h2>Bireyler</h2>
     <form class="row" id="vForm"><input class="i mono" id="vq" placeholder="Kimlik ara, örnek: AT017" value="${esc(ST.vq||"")}" autocapitalize="characters" style="flex:1;min-width:160px"><button class="btn primary">Aç</button></form>
-    <div class="vlist">${l.slice(0,300).map((b,i)=>{const p=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,20)*40}ms"><div class="ph">${p?imgTag(p,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}</span><span class="small">${esc(gname(b.geno))} · Kümes ${esc(b.pen)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")}</div>
+    <div class="vlist">${l.slice(0,300).map((b,i)=>{const p=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,20)*40}ms"><div class="ph">${p?imgTag(p,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}${pk(b)}</span><span class="small">${esc(gname(b.geno))} · Kümes ${esc(b.pen)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")}</div>
   </section>`;
 }
 function bindVisitorList(){
@@ -1642,7 +1647,7 @@ function viewVisitorBird(b){
   if(first&&last&&last!==first){k.push(["Toplam artış",fmt(last[1]-first[1])+" g"]);k.push(["Ortalama günlük artış",fmt((last[1]-first[1])/(last[0]-first[0]),1)+" g/gün"])}
   if(last&&pl)k.push(["Kümes ortalamasına göre",(last[1]>=pl?"+":"")+fmt((last[1]/pl-1)*100,1)+" %"]);
   return `<div class="row"><button class="btn ghost" id="back">← ${ST.curPen?"Kümes "+ST.curPen:"Tüm bireyler"}</button></div>
-  <section class="card stack"><span class="tag xl ${esc(g)}">${esc(b.id)}</span>
+  <section class="card stack"><div class="row" style="gap:10px"><span class="tag xl ${esc(g)}">${esc(b.id)}</span>${penBig(b)}</div>
     <div class="row small"><b>${esc(gname(g))}</b><span>Kümes ${esc(b.pen)}</span><span>Cinsiyet: ${esc(b.sex||"belirsiz")}</span><span class="pill ${st==="aktif"?"ok":st==="öldü"?"bad":""}">${esc(st)}</span></div></section>
   ${rec.length?`<div class="timeline">${items}</div>`:`<div class="empty">Bu birey için henüz tartım ya da fotoğraf girilmedi.</div>`}
   <section class="card stack" style="animation:rise .6s both;animation-delay:${rec.length*160}ms"><h3>Genel bilgiler</h3>
@@ -1666,7 +1671,7 @@ function viewVisitorPen(p){
     ${last?lineChart({series})+`<div class="legend"><span><i style="border-color:${colOf(g)}"></i>Kümes ${p}</span><span><i style="border-color:${mut};border-top-style:dotted"></i>Tüm ${esc(gname(g))} ortalaması</span>${gs.filter(x=>x!==g).map(x=>`<span><i style="border-color:${colOf(x)};border-top-style:dashed"></i>${esc(gname(x))} ortalaması</span>`).join("")}</div>`:`<p class="muted">Bu kümeste henüz tartım yapılmadı.</p>`}
   </section>
   <h3>Kümesteki bireyler</h3>
-  <div class="vlist">${bs.map((b,i)=>{const ph=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,20)*40}ms"><div class="ph">${ph?imgTag(ph,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")||`<div class="empty">Bu kümese henüz birey atanmadı.</div>`}</div>`;
+  <div class="vlist">${bs.map((b,i)=>{const ph=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,20)*40}ms"><div class="ph">${ph?imgTag(ph,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}${pk(b)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")||`<div class="empty">Bu kümese henüz birey atanmadı.</div>`}</div>`;
 }
 function bindVisitorPen(){$("#back").onclick=()=>{ST.curPen=null;render();window.scrollTo(0,0)};document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open))}
 function bindVisitorBird(){$("#back").onclick=()=>{ST.cur=null;render();window.scrollTo(0,0)}}
