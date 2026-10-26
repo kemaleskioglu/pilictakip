@@ -42,7 +42,8 @@
   --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%235fbf95' stroke-opacity='.08' stroke-width='2' stroke-linecap='round'%3E%3Cellipse cx='34' cy='38' rx='11' ry='14'/%3E%3Cellipse cx='118' cy='112' rx='9' ry='12'/%3E%3Cpath d='M106 22c12 6 18 18 14 32M110 30l-8 5M114 37l-8 4M117 44l-8 3'/%3E%3Cpath d='M26 118c6 10 17 15 28 12M32 121l2 8M39 125l1 8M46 127l0 8'/%3E%3Ccircle cx='80' cy='78' r='2'/%3E%3Ccircle cx='140' cy='40' r='1.6'/%3E%3Ccircle cx='70' cy='146' r='1.6'/%3E%3C/g%3E%3C/svg%3E"); color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--fg)}
-body{background-color:var(--bg);background-image:var(--pattern),linear-gradient(180deg,var(--sky) 0,var(--bg) 420px);background-repeat:repeat,no-repeat;background-size:160px 160px,100% 100%;background-attachment:fixed,fixed}
+html{min-height:100%;background-color:var(--bg);background-image:var(--pattern),linear-gradient(180deg,var(--sky) 0,var(--bg) 420px);background-repeat:repeat,no-repeat;background-size:160px 160px,100% 100%;background-attachment:fixed,fixed}
+body{background:transparent;min-height:100vh}
 body{font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:88px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 h1,h2,h3{font-family:var(--body);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:0;line-height:1.25}
@@ -1561,7 +1562,7 @@ const lastPhoto=b=>{const ds=days().slice().reverse();for(const d of ds){const t
 const lastW=b=>{const ds=days().slice().reverse();for(const d of ds){const w=wOf(b,d);if(w!=null)return [d,w]}return null};
 function viewVisitorList(){
   const q=normId(ST.vq||"");let l=birdList();if(q)l=l.filter(b=>b.id.includes(q));
-  if(!birdList().length)return ST.loaded?`<div class="empty">Henüz kayıtlı birey yok.</div>`:`<div class="empty">Kayıtlar yükleniyor…</div>`;
+  if(!birdList().length)return `<section class="stack">${heroSVG("hero-band",150)}<div class="empty">${ST.loaded?"Henüz kayıtlı birey yok. Deneme başlayınca bireyler ve fotoğrafları burada görünecek.":"Kayıtlar yükleniyor…"}</div></section>`;
   return `<section class="stack">
     ${heroSVG("hero-band",150)}
     <h2>Bireyler</h2>
