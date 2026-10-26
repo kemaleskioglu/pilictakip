@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1f6b4f">
 <title>PiliçTakip</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PiliçTakip">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap">
 <style>
@@ -349,6 +356,8 @@ const Store={
       sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
       ST.mode="db";
       try{const {data}=await sb.auth.getSession();ST.session=data.session||null}catch(e){}
+      ST.pdocs=(await IDB.get("pdocs"))||{};
+      const cached=await IDB.get("cache");if(cached){this.apply(cached);ST.cachedAt=cached.at;ST.loaded=true;render()}
       await this.load();
       document.addEventListener("visibilitychange",()=>{if(!document.hidden)this.load()});
       setInterval(()=>{if(!document.hidden)this.load()},60000);
@@ -366,14 +375,20 @@ const Store={
     let rows=[];
     for(let from=0;;from+=1000){
       const {data,error}=await sb.from("kayitlar").select("path,data").range(from,from+999);
-      if(error){syncChip("bad","Bağlantı yok");return}
+      if(error){ST.offline=true;syncChip();return}
       rows=rows.concat(data||[]);if(!data||data.length<1000)break;
     }
-    const birds={},pens={};let cfg={},rna={};
-    rows.forEach(r=>{const [c,id]=r.path.split("/");if(c==="birds")birds[id]=r.data;else if(c==="pens")pens[id]=r.data;else if(r.path==="config/main")cfg=r.data;else if(r.path==="rna/deg")rna=r.data});
-    for(const p of ST.pending){const [c,id]=p.split("/");if(c==="birds"&&ST.birds[id])birds[id]=ST.birds[id];if(c==="pens"&&ST.pens[id])pens[id]=ST.pens[id]}
-    ST.birds=birds;ST.pens=pens;ST.config=deepMerge(clone(CONFIG_DEFAULT),cfg||{});ST.rna=rna||{};
+    const snap={birds:{},pens:{},cfg:{},rna:{},at:new Date().toISOString()};
+    rows.forEach(r=>{const [c,id]=r.path.split("/");if(c==="birds")snap.birds[id]=r.data;else if(c==="pens")snap.pens[id]=r.data;else if(r.path==="config/main")snap.cfg=r.data;else if(r.path==="rna/deg")snap.rna=r.data});
+    IDB.put("cache",snap);ST.cachedAt=snap.at;ST.offline=false;
+    this.apply(snap);
     ST.loaded=true;syncChip();tryWanted();softRender();
+  },
+  /* sunucudan ya da telefondaki son kopyadan gelen kayıtları yükler; gönderilmeyi bekleyenler üstte kalır */
+  apply(snap){
+    const birds=clone(snap.birds),pens=clone(snap.pens);let cfg=clone(snap.cfg),rna=clone(snap.rna);
+    for(const [path,doc] of Object.entries(ST.pdocs||{})){const [c,id]=path.split("/");if(c==="birds")birds[id]=clone(doc);else if(c==="pens")pens[id]=clone(doc);else if(path==="config/main")cfg=clone(doc);else if(path==="rna/deg")rna=clone(doc)}
+    ST.birds=birds;ST.pens=pens;ST.config=deepMerge(clone(CONFIG_DEFAULT),cfg||{});ST.rna=rna||{};
   },
   saveLocal(){if(ST.mode==="local")ls("pt_local",{birds:ST.birds,pens:ST.pens,config:ST.config,rna:ST.rna})},
   target(path){const [col,id]=path.split("/");if(col==="birds")return [ST.birds,id];if(col==="pens")return [ST.pens,id];return [null,null]},
@@ -415,11 +430,11 @@ const Store={
     }
     syncChip();
   },
-  enqueue(path){if(!ST.pending.includes(path))ST.pending.push(path);ls("pt_queue",ST.pending)},
+  enqueue(path){if(!ST.pending.includes(path))ST.pending.push(path);ls("pt_queue",ST.pending);ST.pdocs=ST.pdocs||{};ST.pdocs[path]=clone(this.full(path));IDB.put("pdocs",ST.pdocs)},
   async flush(){
     if(ST.mode!=="db"||!ST.canWrite||this.busy)return;this.busy=true;
     try{
-      if(ST.pending.length){const left=[];for(const path of ST.pending){if(!this.full(path))continue;try{await this.write(path)}catch(e){left.push(path)}}ST.pending=left;ls("pt_queue",left)}
+      if(ST.pending.length){const left=[];for(const path of ST.pending){if(!this.full(path)){delete ST.pdocs?.[path];continue}try{await this.write(path);delete ST.pdocs?.[path]}catch(e){left.push(path)}}ST.pending=left;ls("pt_queue",left);IDB.put("pdocs",ST.pdocs||{});if(!left.length)toast("Bekleyen kayıtlar gönderildi")}
       for(const b of Object.values(ST.birds))for(const [dk,w] of Object.entries(b.weeks||{}))for(const slot of ["top","side"]){
         const ref=w[slot];if(typeof ref!=="string"||!ref.startsWith("pend:"))continue;
         const blob=await IDB.get(ref);if(!blob)continue;
@@ -444,10 +459,11 @@ async function login(pw){
   if(!sb){ST.role="owner";ST.canWrite=true;return true}
   const {data,error}=await sb.auth.signInWithPassword({email:OWNER_EMAIL,password:pw});
   if(error||!data.session)return false;
-  ST.session=data.session;ST.role="owner";ST.canWrite=true;Store.flush();return true;
+  ST.session=data.session;ST.role="owner";ST.canWrite=true;ls("pt_owner",1);Store.flush();return true;
 }
+function confirmLogout(){dlg(`<h3>Gönderilmemiş kayıt var</h3><p>${ST.pending.length} kayıt henüz sunucuya gitmedi. Çıkış yaparsan bağlantı gelene kadar gönderilemez. Önce internete bağlanıp birkaç saniye beklemen önerilir.</p>`,()=>{confirmLogout.ok=true;logout()},"Yine de çıkış yap",true)}
 async function logout(){
-  if(sb&&ST.role==="owner"){try{await sb.auth.signOut()}catch(e){}ST.session=null}
+  if(sb&&ST.role==="owner"){if(ST.pending.length&&!confirmLogout.ok){confirmLogout();return}try{await sb.auth.signOut()}catch(e){}ST.session=null;ls("pt_owner",0)}confirmLogout.ok=false;
   ST.role=null;ST.canWrite=false;ST.cur=null;ST.view="okut";render();window.scrollTo(0,0);
 }
 function syncChip(kind,text){
@@ -457,7 +473,7 @@ function syncChip(kind,text){
     else if(ST.mode==="local"){kind="warn";text="Yalnızca bu cihaz"}
     else if(ST.mode==="init"){kind="";text="Bağlanıyor"}
     else if(ST.pending.length){kind="warn";text=`${ST.pending.length} kayıt bekliyor`}
-    else if(!navigator.onLine){kind="bad";text="Çevrimdışı"}
+    else if(!navigator.onLine||ST.offline){kind="bad";text=ST.cachedAt?`Çevrimdışı · ${new Date(ST.cachedAt).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})} kopyası`:"Çevrimdışı"}
     else if(!ST.loaded){kind="";text="Yükleniyor"}
     else{kind="ok";text=ST.canWrite?"Eşitlendi":"Görüntüleme"}
   }
@@ -1112,6 +1128,10 @@ function viewSettings(){
     <p class="small muted">Excel dosyası R ve SPSS için uzun formattadır: her satır bir birey × gün. Fotoğraflar ZIP içinde genotip klasörlerinde, <span class="mono">AT017_21gün_üst.jpg</span> adıyla gelir.</p>
     <div class="row"><button class="btn primary" id="xlsxBtn" ${n?"":"disabled"}>Excel'e aktar</button><button class="btn" id="zipBtn" ${n?"":"disabled"}>Fotoğrafları indir (ZIP)</button><button class="btn" id="jsonBtn" ${n?"":"disabled"}>Tam yedek (JSON)</button><button class="btn" id="jsonIn">Yedekten geri yükle</button></div>
   </div>
+  <div class="card stack"><h3>Telefona kur</h3>
+    ${isStandalone()?`<p class="small"><span class="pill ok">Kurulu</span> Uygulama ana ekrandan açılmış.</p>`:installEvt?`<p class="small muted">Uygulamayı ana ekrana ekle; simgesinden açılır, çekim olmasa da son kayıtlarla çalışır.</p><div class="row"><button class="btn primary" id="installBtn">Telefona kur</button></div>`:`<p class="small muted">${/iphone|ipad|ipod/i.test(navigator.userAgent)?`iPhone'da: Safari'de bu sayfayı aç → alttaki <b>Paylaş</b> simgesi → <b>Ana Ekrana Ekle</b>.`:`Android'de: Chrome menüsü (⋮) → <b>Uygulamayı yükle</b> ya da <b>Ana ekrana ekle</b>.`}</p>`}
+    <p class="ref">Çekim yokken: son eşitlenen kayıtlar ve daha önce açılan fotoğraflar görünür, yeni tartım ve fotoğraflar telefonda bekletilir ve bağlantı gelince kendiliğinden gönderilir. İlk açılış ve ilk giriş için bir kez internet gerekir.</p>
+  </div>
   <div class="card stack"><h3>Hesap</h3><p class="small muted">${ST.mode==="db"?`Kullanıcı olarak giriş yapıldı. Ziyaretçiler yalnızca birey kimliğini, fotoğrafları ve girilmiş verileri görür; kayıt giremez.`:`Veritabanı bağlantısı kurulmadı; KURULUM.md dosyasındaki adımları izle.`}</p><div class="row"><button class="btn" id="logoutBtn">Çıkış yap</button><button class="btn" id="asVisitor">Ziyaretçi görünümüne bak</button></div></div>
   <div class="card stack"><h3>Örnek veri</h3><p class="small muted">240 bireylik benzetilmiş bir denemeyle tüm ekranları dene. Örnek veri kaydedilmez; çıkınca gerçek verin aynen döner.</p><div class="row"><button class="btn" id="demoBtn">Örnek veriyle dene</button></div></div>
   </section>`;
@@ -1141,6 +1161,7 @@ BIND.ayar=()=>{
   $("#xlsxBtn").onclick=exportXLSX;$("#zipBtn").onclick=exportZIP;$("#jsonBtn").onclick=exportJSON;$("#jsonIn").onclick=importJSON;
   $("#demoBtn").onclick=loadDemo;
   $("#logoutBtn").onclick=logout;
+  const ib=$("#installBtn");if(ib)ib.onclick=async()=>{installEvt.prompt();const r=await installEvt.userChoice.catch(()=>null);installEvt=null;if(r?.outcome==="accepted")toast("Uygulama kuruldu");render()};
   $("#asVisitor").onclick=()=>{ST.role="visitor";ST.canWrite=false;ST.cur=null;render()};
 };
 async function makeBirds(){
@@ -1409,7 +1430,7 @@ function viewGate(){
 function bindGate(){
   $("#gVisitor").onclick=()=>{ST.role="visitor";ST.canWrite=false;if(ST.want&&ST.loaded)tryWanted();else render()};
   $("#gUser").onclick=()=>{
-    if(ST.session||!sb){ST.role="owner";ST.canWrite=true;Store.flush();if(ST.want&&ST.loaded)tryWanted();else render();return}
+    if(ST.session||!sb||((!navigator.onLine||ST.offline)&&ls("pt_owner"))){ST.role="owner";ST.canWrite=true;Store.flush();if(ST.want&&ST.loaded)tryWanted();else render();return}
     $("#gForm").hidden=false;$("#gUser").hidden=true;$("#gPw").focus();
   };
   $("#gForm").onsubmit=async e=>{
@@ -1527,6 +1548,12 @@ function loadDemo(){
   if(!ST.role){ST.role="owner"}ST.canWrite=true;
   toast("Örnek veri yüklendi");setView("okut");
 }
+
+/* ============ kurulum ve çevrimdışı ============ */
+let installEvt=null;
+const isStandalone=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(ST.view==="ayar")softRender()});
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 /* ============ başlat ============ */
 readHash();
