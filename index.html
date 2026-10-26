@@ -482,7 +482,7 @@ async function login(pw){
 function confirmLogout(){dlg(`<h3>Gönderilmemiş kayıt var</h3><p>${ST.pending.length} kayıt henüz sunucuya gitmedi. Çıkış yaparsan bağlantı gelene kadar gönderilemez. Önce internete bağlanıp birkaç saniye beklemen önerilir.</p>`,()=>{confirmLogout.ok=true;logout()},"Yine de çıkış yap",true)}
 async function logout(){
   if(sb&&ST.role==="owner"){if(ST.pending.length&&!confirmLogout.ok){confirmLogout();return}try{await sb.auth.signOut()}catch(e){}ST.session=null;ls("pt_owner",0)}confirmLogout.ok=false;
-  ST.role=null;ST.canWrite=false;ST.cur=null;ST.view="okut";render();window.scrollTo(0,0);
+  ST.role=null;ST.canWrite=false;ST.cur=null;ST.curPen=null;ST.view="okut";render();window.scrollTo(0,0);
 }
 function syncChip(kind,text){
   const c=$("#sync");
@@ -647,7 +647,7 @@ function render(){
   $("#exitBtn").hidden=!ST.role;$("#exitBtn").textContent=ST.role==="owner"?"Çıkış yap":"Giriş ekranı";
   try{
     if(!ST.role){m.innerHTML=viewGate();bindGate();return}
-    if(ST.role==="visitor"){if(ST.cur&&ST.birds[ST.cur]){m.innerHTML=viewVisitorBird(ST.birds[ST.cur]);bindVisitorBird()}else{ST.cur=null;m.innerHTML=viewVisitorList();bindVisitorList()}return}
+    if(ST.role==="visitor"){if(ST.cur&&ST.birds[ST.cur]){m.innerHTML=viewVisitorBird(ST.birds[ST.cur]);bindVisitorBird()}else if(ST.curPen){ST.cur=null;m.innerHTML=viewVisitorPen(ST.curPen);bindVisitorPen()}else{ST.cur=null;m.innerHTML=viewVisitorList();bindVisitorList()}return}
     if(ST.cur&&ST.birds[ST.cur]){m.innerHTML=viewBird(ST.birds[ST.cur]);bindBird()}
     else{ST.cur=null;const v={okut:viewScan,bireyler:viewBirds,kumes:viewPens,et:viewMeat,rna:viewRna,analiz:viewAnaliz,ayar:viewSettings}[ST.view]||viewScan;m.innerHTML=v();(BIND[ST.view]||(()=>{}))()}
   }catch(e){console.error(e);m.innerHTML=`<div class="card stack"><h3>Bu ekran açılamadı</h3><p class="small muted">${esc(e.message)}</p><div class="row"><button class="btn" id="errHome">Ana ekrana dön</button></div></div>`;const eh=$("#errHome");if(eh)eh.onclick=()=>setView("okut")}
@@ -655,15 +655,25 @@ function render(){
 }
 $("#exitBtn").onclick=logout;
 const BIND={};
+/* Kümes kapısı QR'ı "K3" gibi bir kimlik taşır */
+const penOfId=id=>{const m=/^K(\d{1,3})$/.exec(normId(id));return m&&!ST.birds[normId(id)]?Number(m[1]):null};
+function openPen(p){
+  if(!ST.loaded&&ST.mode!=="local"&&ST.mode!=="demo"){ST.want={id:"K"+p};toast("Kayıtlar yükleniyor…");return true}
+  if(!penIds().includes(p)){toast(`Kümes ${p} bu denemede yok`);return false}
+  ST.cur=null;
+  if(ST.role==="visitor"){ST.curPen=p;render();window.scrollTo(0,0);return true}
+  ST.view="kumes";ST.penSel=p;render();window.scrollTo(0,0);return true;
+}
 function openBird(id,sec){
   id=normId(id);
+  {const pn=penOfId(id);if(pn)return openPen(pn)}
   if(!ST.birds[id]){if(!ST.loaded&&ST.mode!=="local"&&ST.mode!=="demo"){ST.want={id,sec};toast("Kayıtlar yükleniyor…");return true}toast(`${id||"Kimlik"} bu denemede yok`);return false}
   if(ST.role==="visitor"){ST.cur=id;render();window.scrollTo(0,0);return true}
   ST.cur=id;ST.curSec=sec||null;ST.curDay=ST.curDay??nearestDay();render();window.scrollTo(0,0);
   if(sec)setTimeout(()=>{const el=document.getElementById("sec-"+sec);if(el){el.open=true;el.scrollIntoView({block:"start"})}},30);
   return true;
 }
-function tryWanted(){if(!ST.want||!ST.loaded||!ST.role)return;const w=ST.want;ST.want=null;if(ST.birds[w.id])openBird(w.id,w.sec);else toast(`${w.id} bu denemede yok`)}
+function tryWanted(){if(!ST.want||!ST.loaded||!ST.role)return;const w=ST.want;ST.want=null;if(ST.birds[w.id]||penOfId(w.id))openBird(w.id,w.sec);else toast(`${w.id} bu denemede yok`)}
 function readHash(){const h=(location.hash||"").slice(1);if(!h)return;const id=parseQR("#"+h);if(id)ST.want={id}}
 window.addEventListener("hashchange",()=>{readHash();tryWanted()});
 
@@ -731,7 +741,7 @@ async function liveScan(sec){
         else if(window.jsQR){const w=720,h=Math.round(v.videoHeight*w/v.videoWidth);c.width=w;c.height=h;x.drawImage(v,0,0,w,h);const r=window.jsQR(x.getImageData(0,0,w,h).data,w,h,{inversionAttempts:"attemptBoth"});if(r)txt=r.data}
       }catch(e){}
       if(txt){const id=parseQR(txt);
-        if(ST.birds[id]){try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}close();openBird(id,sec);toast(id+" açıldı");return}
+        if(ST.birds[id]||penOfId(id)){try{navigator.vibrate&&navigator.vibrate(60)}catch(e){}close();openBird(id,sec);toast((penOfId(id)?"Kümes "+penOfId(id):id)+" açıldı");return}
         if(id!==last){last=id;const el=$("#scMsg");if(el)el.textContent=`${id} bu denemede yok`}}
     }
     setTimeout(tick,det?100:160);
@@ -974,10 +984,11 @@ function viewPens(){
         <td class="n">${r.deadN||""}</td><td class="n">${fmt(r.fcr,3)}</td><td class="n">${fmt(r.cfcr,3)}</td>
         <td><input class="i num" data-k="temp" inputmode="decimal" value="${esc(r.wk.temp??"")}"></td><td><input class="i num" data-k="rh" inputmode="decimal" value="${esc(r.wk.rh??"")}"></td></tr>`).join("")}
       </tbody></table></div>
-      <div class="row"><button class="btn primary" id="savePen">Kümes ${p} kaydını kaydet</button></div>
+      <div class="row"><button class="btn primary" id="savePen">Kümes ${p} kaydını kaydet</button><button class="btn" id="penPoster" type="button">Kümes kapısı QR afişleri (PDF)</button></div>
     </div></section>`;
 }
 BIND.kumes=()=>{
+  $("#penPoster").onclick=penPosterPDF;
   document.querySelectorAll("[data-pen]").forEach(x=>x.onclick=()=>{if($('[data-form="pen"]')?.dataset.dirty==="1"){toast("Önce bu kümesi kaydet");return}ST.penSel=Number(x.dataset.pen);render()});
   $("#savePen").onclick=async()=>{
     const p=ST.penSel,weeks={};
@@ -1237,6 +1248,32 @@ async function importBirds(){
 async function saveFile(name,data){
   if(DL){try{await DL.save({filename:name,data});toast(name+" indirildi")}catch(e){if(e.code!=="declined")toast("İndirilemedi: "+(e.message||e.code))}return}
   const a=document.createElement("a");a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data]));a.download=name;document.body.appendChild(a);a.click();a.remove();
+}
+function svgImage(svg,w,h){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;const t=svg.replace("<svg ",`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" `);im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(t)})}
+async function penPosterPDF(){
+  toast("Afişler hazırlanıyor…",8000);await loadScript(LIB.pdf);try{await document.fonts.ready}catch(e){}
+  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"mm",format:"a4"});const W=1240,H=1754;
+  const hero=await svgImage(heroSVG("hero",210),W,Math.round(W*210/420)).catch(()=>null);
+  let first=true;
+  for(const p of penIds()){
+    const g=penGeno(p),gc={AT:"#b07a00",RS:"#2a62b8"}[g]||"#1f6b4f";
+    const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+    x.fillStyle="#f6f8f4";x.fillRect(0,0,W,H);
+    const top=520;
+    if(hero)x.drawImage(hero,0,hero.height-top,W,top,0,0,W,top);
+    x.fillStyle="#1f6b4f";x.fillRect(0,top,W,14);
+    x.textAlign="center";x.fillStyle="#18211b";x.font="600 64px Fredoka, 'Noto Sans', sans-serif";x.fillText("KümesTakip",W/2,top+110);
+    x.font="700 190px Fredoka, 'Noto Sans', sans-serif";x.fillText("Kümes "+p,W/2,top+290);
+    if(g){x.font="600 64px 'Noto Sans', sans-serif";const t=gname(g),tw=x.measureText(t).width+80;x.fillStyle=gc;x.beginPath();x.roundRect(W/2-tw/2,top+340,tw,96,48);x.fill();x.fillStyle="#fff";x.fillText(t,W/2,top+410)}
+    const q=qrObj(qrText("K"+p)),n=q.getModuleCount(),qs=560,m=qs/(n+8),qx=(W-qs)/2,qy=top+470;
+    x.fillStyle="#fff";x.beginPath();x.roundRect(qx-20,qy-20,qs+40,qs+40,36);x.fill();x.strokeStyle="#d3d9d0";x.lineWidth=4;x.stroke();
+    x.fillStyle="#18211b";for(let r=0;r<n;r++)for(let cc=0;cc<n;cc++)if(q.isDark(r,cc))x.fillRect(Math.floor(qx+(cc+4)*m),Math.floor(qy+(r+4)*m),Math.ceil(m),Math.ceil(m));
+    x.fillStyle="#56635a";x.font="500 44px 'Noto Sans', sans-serif";
+    x.fillText("Telefonunun kamerasıyla okut,",W/2,qy+qs+95);x.fillText("bu kümesteki civcivlerin gelişimini izle.",W/2,qy+qs+150);
+    if(!first)doc.addPage();first=false;
+    doc.addImage(c.toDataURL("image/jpeg",0.92),"JPEG",0,0,210,297);
+  }
+  await saveFile("Kumes_kapisi_QR.pdf",doc.output("blob"));
 }
 async function labelPDF(){
   toast("PDF hazırlanıyor…",8000);await loadScript(LIB.pdf);
@@ -1507,7 +1544,7 @@ function viewGate(){
     ${heroSVG()}
     <div class="logo">Kümes<b style="color:var(--accent)">Takip</b></div>
     <p class="muted" style="margin:0">Bireysel kanatlı takip</p>
-    ${w?`<p style="margin:0">Okutulan birey: <span class="tag ${esc(ST.birds[w]?.geno||"")}">${esc(w)}</span></p>`:""}
+    ${w?(/^K\d{1,3}$/.test(w)&&!ST.birds[w]?`<p style="margin:0">Okutulan: <b>Kümes ${esc(w.slice(1))}</b></p>`:`<p style="margin:0">Okutulan birey: <span class="tag ${esc(ST.birds[w]?.geno||"")}">${esc(w)}</span></p>`):""}
     <button class="btn primary big" id="gVisitor">Ziyaretçi olarak gir</button>
     <button class="btn big" id="gUser">Kullanıcı olarak gir</button>
     <form id="gForm" class="stack" hidden autocomplete="on">
@@ -1603,7 +1640,7 @@ function viewVisitorBird(b){
   if(last&&last!==first)k.push([`Son tartım (${last[0]}. gün)`,fmt(last[1])+" g"]);
   if(first&&last&&last!==first){k.push(["Toplam artış",fmt(last[1]-first[1])+" g"]);k.push(["Ortalama günlük artış",fmt((last[1]-first[1])/(last[0]-first[0]),1)+" g/gün"])}
   if(last&&pl)k.push(["Kümes ortalamasına göre",(last[1]>=pl?"+":"")+fmt((last[1]/pl-1)*100,1)+" %"]);
-  return `<div class="row"><button class="btn ghost" id="back">← Tüm bireyler</button></div>
+  return `<div class="row"><button class="btn ghost" id="back">← ${ST.curPen?"Kümes "+ST.curPen:"Tüm bireyler"}</button></div>
   <section class="card stack"><span class="tag xl ${esc(g)}">${esc(b.id)}</span>
     <div class="row small"><b>${esc(gname(g))}</b><span>Kümes ${esc(b.pen)}</span><span>Cinsiyet: ${esc(b.sex||"belirsiz")}</span><span class="pill ${st==="aktif"?"ok":st==="öldü"?"bad":""}">${esc(st)}</span></div></section>
   ${rec.length?`<div class="timeline">${items}</div>`:`<div class="empty">Bu birey için henüz tartım ya da fotoğraf girilmedi.</div>`}
@@ -1613,6 +1650,24 @@ function viewVisitorBird(b){
   </section>
   ${roSections(b)}`;
 }
+function viewVisitorPen(p){
+  const bs=penBirds(p),g=penGeno(p),st=penStats(p),last=[...st].reverse().find(r=>r.n),cf=[...st].reverse().find(r=>r.cfcr!=null);
+  const colOf=x=>cssv(x==="AT"?"--at":x==="RS"?"--rs":"--accent"),mut=cssv("--muted"),gs=Object.keys(G()),ds=days();
+  const alive=bs.filter(b=>(b.status||"aktif")==="aktif"||b.status==="kesildi").length,dead=bs.filter(b=>b.status==="öldü").length;
+  const series=[...gs.filter(x=>x!==g).map(x=>({pts:ds.map(d=>[d,genoMeans(x,d)]),color:colOf(x),dash:"6 4",wd:1.6})),{pts:ds.map(d=>[d,genoMeans(g,d)]),color:mut,dash:"2 4",wd:1.6},{pts:st.map(r=>[r.d,r.mean]),color:colOf(g),dots:1,wd:2.6}];
+  const k=[["Genotip",gname(g)||"—"],["Birey",`${alive} canlı${dead?` · ${dead} ölü`:""}`]];
+  if(last){k.push([`Ortalama ağırlık (${last.d}. gün)`,fmt(last.mean)+" g"]);if(last.cv!=null)k.push(["Homojenlik (CV)","%"+fmt(last.cv,1)])}
+  if(cf)k.push([`Yemden yararlanma (FCR, ${cf.d}. gün)`,fmt(cf.cfcr,2)]);
+  return `<div class="row"><button class="btn ghost" id="back">← Tüm bireyler</button></div>
+  ${heroSVG("hero-band",150)}
+  <section class="card stack"><h2>Kümes ${p}</h2>
+    <div class="kpis">${k.map(x=>`<div class="kpi"><div class="v" style="font-size:1.25rem">${esc(x[1])}</div><div class="l">${esc(x[0])}</div></div>`).join("")}</div>
+    ${last?lineChart({series})+`<div class="legend"><span><i style="border-color:${colOf(g)}"></i>Kümes ${p}</span><span><i style="border-color:${mut};border-top-style:dotted"></i>Tüm ${esc(gname(g))} ortalaması</span>${gs.filter(x=>x!==g).map(x=>`<span><i style="border-color:${colOf(x)};border-top-style:dashed"></i>${esc(gname(x))} ortalaması</span>`).join("")}</div>`:`<p class="muted">Bu kümeste henüz tartım yapılmadı.</p>`}
+  </section>
+  <h3>Kümesteki bireyler</h3>
+  <div class="vlist">${bs.map((b,i)=>{const ph=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,20)*40}ms"><div class="ph">${ph?imgTag(ph,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")||`<div class="empty">Bu kümese henüz birey atanmadı.</div>`}</div>`;
+}
+function bindVisitorPen(){$("#back").onclick=()=>{ST.curPen=null;render();window.scrollTo(0,0)};document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open))}
 function bindVisitorBird(){$("#back").onclick=()=>{ST.cur=null;render();window.scrollTo(0,0)}}
 
 /* ============ örnek veri (yalnızca bellekte) ============ */
