@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="KümesTakip">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: saha aracı — üstte deneme şeridi, ortada tek görünüm, telefonda altta sekme çubuğu; masaüstünde sekmeler üstte */
 :root{
@@ -23,26 +23,26 @@
   --ok:#2e7d3e; --warn:#a35f00; --bad:#b3261e; --warn-soft:#fbeed9; --bad-soft:#f9e1df;
   --body:"Noto Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:"Noto Sans Mono",ui-monospace,Menlo,Consolas,monospace;
-  --brand:"Fredoka","Noto Sans",system-ui,sans-serif;
+  --brand:"Noto Sans",system-ui,sans-serif;
   --r:8px;
-  --sky:#dff0e6; --topbg:rgba(243,245,242,.86);
-  --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%231f6b4f' stroke-opacity='.075' stroke-width='2' stroke-linecap='round'%3E%3Cellipse cx='34' cy='38' rx='11' ry='14'/%3E%3Cellipse cx='118' cy='112' rx='9' ry='12'/%3E%3Cpath d='M106 22c12 6 18 18 14 32M110 30l-8 5M114 37l-8 4M117 44l-8 3'/%3E%3Cpath d='M26 118c6 10 17 15 28 12M32 121l2 8M39 125l1 8M46 127l0 8'/%3E%3Ccircle cx='80' cy='78' r='2'/%3E%3Ccircle cx='140' cy='40' r='1.6'/%3E%3Ccircle cx='70' cy='146' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
+  --sky:#e2ece6; --topbg:rgba(243,245,242,.9);
+  --pattern:none;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#111613; --surface:#18201b; --sunk:#202a23; --line:#2f3b33; --fg:#e6ece7; --muted:#a2b0a6;
   --accent:#5fbf95; --accent-fg:#0c1510; --accent-soft:#1e3328;
   --at:#e7b23a; --at-soft:#3a2f14; --rs:#7aa7f0; --rs-soft:#1c2a42;
-  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; --sky:#152a1f; --topbg:rgba(17,22,19,.86);
-  --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%235fbf95' stroke-opacity='.08' stroke-width='2' stroke-linecap='round'%3E%3Cellipse cx='34' cy='38' rx='11' ry='14'/%3E%3Cellipse cx='118' cy='112' rx='9' ry='12'/%3E%3Cpath d='M106 22c12 6 18 18 14 32M110 30l-8 5M114 37l-8 4M117 44l-8 3'/%3E%3Cpath d='M26 118c6 10 17 15 28 12M32 121l2 8M39 125l1 8M46 127l0 8'/%3E%3Ccircle cx='80' cy='78' r='2'/%3E%3Ccircle cx='140' cy='40' r='1.6'/%3E%3Ccircle cx='70' cy='146' r='1.6'/%3E%3C/g%3E%3C/svg%3E"); color-scheme:dark}}
+  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; --sky:#14231b; --topbg:rgba(17,22,19,.9);
+  --pattern:none; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111613; --surface:#18201b; --sunk:#202a23; --line:#2f3b33; --fg:#e6ece7; --muted:#a2b0a6;
   --accent:#5fbf95; --accent-fg:#0c1510; --accent-soft:#1e3328;
   --at:#e7b23a; --at-soft:#3a2f14; --rs:#7aa7f0; --rs-soft:#1c2a42;
-  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; --sky:#152a1f; --topbg:rgba(17,22,19,.86);
-  --pattern:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cg fill='none' stroke='%235fbf95' stroke-opacity='.08' stroke-width='2' stroke-linecap='round'%3E%3Cellipse cx='34' cy='38' rx='11' ry='14'/%3E%3Cellipse cx='118' cy='112' rx='9' ry='12'/%3E%3Cpath d='M106 22c12 6 18 18 14 32M110 30l-8 5M114 37l-8 4M117 44l-8 3'/%3E%3Cpath d='M26 118c6 10 17 15 28 12M32 121l2 8M39 125l1 8M46 127l0 8'/%3E%3Ccircle cx='80' cy='78' r='2'/%3E%3Ccircle cx='140' cy='40' r='1.6'/%3E%3Ccircle cx='70' cy='146' r='1.6'/%3E%3C/g%3E%3C/svg%3E"); color-scheme:dark}
+  --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; --sky:#14231b; --topbg:rgba(17,22,19,.9);
+  --pattern:none; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--fg)}
-html{min-height:100%;background-color:var(--bg);background-image:var(--pattern),linear-gradient(180deg,var(--sky) 0,var(--bg) 420px);background-repeat:repeat,no-repeat;background-size:160px 160px,100% 100%;background-attachment:fixed,fixed}
+html{min-height:100%;background-color:var(--bg);background-image:radial-gradient(1100px 420px at 50% -140px,var(--sky),transparent 70%);background-repeat:no-repeat;background-attachment:fixed}
 body{background:transparent;min-height:100vh}
 body{font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:88px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
@@ -58,8 +58,8 @@ button{cursor:pointer}
 .wrap{max-width:1080px;margin:0 auto}
 
 .top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--topbg);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;align-items:center;gap:12px;padding-block:10px;border-bottom:1px solid var(--line)}
-.brand{font-family:var(--brand);font-weight:600;font-size:1.3rem;letter-spacing:0;display:flex;align-items:center;gap:8px}
-.brand .mark{width:30px;height:30px;border-radius:9px;flex:0 0 auto;background:#1f6b4f url("icons/icon-192.png") center/cover;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.brand{font-family:var(--brand);font-weight:800;font-size:1.15rem;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
+.brand .mark{width:28px;height:28px;border-radius:8px;flex:0 0 auto;background:#1f6b4f url("icons/icon-192.png") center/cover;box-shadow:0 2px 6px rgba(0,0,0,.15)}
 .brand b{color:var(--accent);font-weight:700}
 .trial{flex:1;min-width:0;color:var(--muted);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
@@ -180,7 +180,7 @@ img{max-width:100%}
 /* giriş ekranı */
 .gate{min-height:70vh;display:grid;place-items:center;padding-block:24px}
 .gate-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
-.gate-card .logo{font-family:var(--brand);font-size:2.3rem;font-weight:600;letter-spacing:0;line-height:1.1}
+.gate-card .logo{font-family:var(--brand);font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1.1}
 .gate-card{overflow:hidden}
 .gate-card .hero{margin:-24px -24px 4px;width:calc(100% + 48px);max-width:none;display:block}
 .hero-band{display:block;width:100%;max-width:100%;border-radius:12px;border:1px solid var(--line)}
@@ -205,15 +205,17 @@ img{max-width:100%}
 .kv dt{color:var(--muted)} .kv dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
 .gain{color:var(--ok)}
 @media (prefers-reduced-motion:no-preference){
-  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-  .wk,.vcard{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .wk,.vcard{animation:rise .32s ease-out both}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  .hero .curve,.hero-band .curve{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.4s .15s cubic-bezier(.4,0,.2,1) forwards}
 }
 </style>
 </head>
 <body>
 
 <header class="top wrap" lang="tr">
-  <div class="brand"><span class="mark" aria-hidden="true"></span><span>Kümes<b>Takip</b></span></div>
+  <div class="brand"><span class="mark" aria-hidden="true"></span><span>Kümes<span style="color:var(--accent)">Takip</span></span></div>
   <div class="trial" aria-hidden="true"></div>
   <span class="chip" id="sync"><i></i><span>Bağlanıyor</span></span>
   <button class="btn ghost" id="exitBtn" hidden>Çıkış</button>
@@ -1258,26 +1260,30 @@ async function saveFile(name,data){
 function svgImage(svg,w,h){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;const t=svg.replace("<svg ",`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" `);im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(t)})}
 async function penPosterPDF(){
   toast("Afişler hazırlanıyor…",8000);await loadScript(LIB.pdf);try{await document.fonts.ready}catch(e){}
-  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"mm",format:"a4"});const W=1240,H=1754;
-  const hero=await svgImage(heroSVG("hero",210),W,Math.round(W*210/420)).catch(()=>null);
+  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"mm",format:"a4"});const W=1240,H=1754,BAND=470;
+  const hero=await svgImage(heroSVG("hero",Math.round(420*BAND/W)),W,BAND).catch(()=>null);
+  const icon=await new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src="icons/icon-192.png"});
+  const F="'Noto Sans', system-ui, sans-serif";
   let first=true;
   for(const p of penIds()){
-    const g=penGeno(p),gc={AT:"#b07a00",RS:"#2a62b8"}[g]||"#1f6b4f";
+    const g=penGeno(p),gc={AT:"#a36f00",RS:"#2a62b8"}[g]||"#1f6b4f";
     const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
-    x.fillStyle="#f6f8f4";x.fillRect(0,0,W,H);
-    const top=520;
-    if(hero)x.drawImage(hero,0,hero.height-top,W,top,0,0,W,top);
-    x.fillStyle="#1f6b4f";x.fillRect(0,top,W,14);
-    x.textAlign="center";x.fillStyle="#18211b";x.font="600 64px Fredoka, 'Noto Sans', sans-serif";x.fillText("KümesTakip",W/2,top+110);
-    x.font="700 190px Fredoka, 'Noto Sans', sans-serif";x.fillText("Kümes "+p,W/2,top+290);
-    if(g){x.font="600 64px 'Noto Sans', sans-serif";const t=gname(g),tw=x.measureText(t).width+80;x.fillStyle=gc;x.beginPath();x.roundRect(W/2-tw/2,top+340,tw,96,48);x.fill();x.fillStyle="#fff";x.fillText(t,W/2,top+410)}
-    const q=qrObj(qrText("K"+p)),n=q.getModuleCount(),qs=560,m=qs/(n+8),qx=(W-qs)/2,qy=top+470;
-    x.fillStyle="#fff";x.beginPath();x.roundRect(qx-20,qy-20,qs+40,qs+40,36);x.fill();x.strokeStyle="#d3d9d0";x.lineWidth=4;x.stroke();
+    x.fillStyle="#ffffff";x.fillRect(0,0,W,H);
+    if(hero)x.drawImage(hero,0,0,W,BAND);else{x.fillStyle="#1f6b4f";x.fillRect(0,0,W,BAND)}
+    if(icon)x.drawImage(icon,84,70,72,72);
+    x.textAlign="left";x.fillStyle="#ffffff";x.font=`800 50px ${F}`;x.fillText("KümesTakip",176,124);
+    x.textAlign="center";x.fillStyle="#18211b";x.font=`800 210px ${F}`;x.fillText("Kümes "+p,W/2,BAND+235);
+    let yy=BAND+280;
+    if(g){x.font=`700 54px ${F}`;const t=gname(g),tw=x.measureText(t).width+90;x.fillStyle=gc;x.beginPath();x.roundRect(W/2-tw/2,yy,tw,92,46);x.fill();x.fillStyle="#fff";x.fillText(t,W/2,yy+64);yy+=92}
+    const q=qrObj(qrText("K"+p)),n=q.getModuleCount(),qs=520,m=qs/(n+8),qx=(W-qs)/2,qy=yy+56;
+    x.fillStyle="#fff";x.strokeStyle="#d6ddd8";x.lineWidth=4;x.beginPath();x.roundRect(qx-24,qy-24,qs+48,qs+48,28);x.fill();x.stroke();
     x.fillStyle="#18211b";for(let r=0;r<n;r++)for(let cc=0;cc<n;cc++)if(q.isDark(r,cc))x.fillRect(Math.floor(qx+(cc+4)*m),Math.floor(qy+(r+4)*m),Math.ceil(m),Math.ceil(m));
-    x.fillStyle="#56635a";x.font="500 44px 'Noto Sans', sans-serif";
-    x.fillText("Telefonunun kamerasıyla okut,",W/2,qy+qs+95);x.fillText("bu kümesteki civcivlerin gelişimini izle.",W/2,qy+qs+150);
+    x.fillStyle="#3d4a41";x.font=`600 42px ${F}`;x.fillText("Kümes bilgileri ve bireylerin gelişimi için",W/2,qy+qs+100);
+    x.fillStyle="#56635a";x.font=`400 40px ${F}`;x.fillText("telefonunuzun kamerasıyla okutun.",W/2,qy+qs+152);
+    x.fillStyle="#e6ebe7";x.fillRect(84,H-110,W-168,2);
+    x.fillStyle="#8a968d";x.font=`400 28px ${F}`;x.textAlign="left";x.fillText(PUBLIC_URL.replace(/^https:\/\//,""),84,H-60);x.textAlign="right";x.fillText("K"+p,W-84,H-60);
     if(!first)doc.addPage();first=false;
-    doc.addImage(c.toDataURL("image/jpeg",0.92),"JPEG",0,0,210,297);
+    doc.addImage(c.toDataURL("image/jpeg",0.93),"JPEG",0,0,210,297);
   }
   await saveFile("Kumes_kapisi_QR.pdf",doc.output("blob"));
 }
@@ -1499,47 +1505,25 @@ function viewAnaliz(){
 BIND.analiz=()=>{$("#calBtn").onclick=calibDlg;$("#recBtn").onclick=recomputeAreas};
 
 /* ============ ÇİZİMLER ============ */
-function chickSVG(x,y,s,flip,tag){
-  return `<g transform="translate(${x} ${y}) scale(${flip?-s:s} ${s})">
-    <path d="M-6 16 L-8 27 M-8 27 l-5 3 M-8 27 l4 3 M6 16 L5 27 M5 27 l-5 3 M5 27 l4 3" stroke="#e8892b" stroke-width="2.4" stroke-linecap="round" fill="none"/>
-    ${tag?`<rect x="1" y="19" width="9" height="9" rx="1.5" fill="#fff" stroke="#18211b" stroke-width=".8"/><rect x="2.8" y="20.8" width="2.4" height="2.4" fill="#18211b"/><rect x="6" y="24" width="2.4" height="2.4" fill="#18211b"/>`:""}
-    <ellipse cx="0" cy="4" rx="17" ry="14" fill="#f6c945"/>
-    <path d="M-10 4 q6 9 15 3" stroke="#dba42a" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-    <circle cx="11" cy="-10" r="10" fill="#f6c945"/>
-    <path d="M7 -21 q3 -5 6 0 q2 -4 5 1" stroke="#f6c945" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M19 -11 l8 2.5 l-8 2.5 z" fill="#e8892b"/>
-    <circle cx="13.5" cy="-12" r="1.7" fill="#18211b"/>
-    <circle cx="9" cy="-6" r="2.2" fill="#f49b7a" opacity=".55"/>
-  </g>`;
-}
 function heroSVG(cls="hero",h=210){
-  return `<svg class="${cls}" viewBox="0 0 420 ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Kümes, çit ve civcivler">
+  const W=420,x0=40,x1=W-40,y0=h-40,y1=34,ds=[0,7,14,21,28,35,42];
+  const f=t=>Math.exp(-Math.exp(-0.11*(t-26))),f0=f(0),f42=f(42);
+  const X=t=>x0+(x1-x0)*t/42,Y=t=>y0-(y0-y1)*(f(t)-f0)/(f42-f0);
+  let d="";for(let t=0;t<=42;t++)d+=(t?"L":"M")+X(t).toFixed(1)+","+Y(t).toFixed(1);
+  const grid=ds.map(t=>`<path d="M${X(t).toFixed(1)} ${y1-12}V${y0}"/>`).join("")+[0,1,2,3].map(i=>`<path d="M${x0} ${(y0-(y0-y1)*i/3).toFixed(1)}H${x1}"/>`).join("");
+  return `<svg class="${cls}" viewBox="0 0 ${W} ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Bireysel büyüme eğrisi">
   <defs>
-    <linearGradient id="kSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9dcef"/><stop offset=".75" stop-color="#e6f5ea"/></linearGradient>
-    <linearGradient id="kHillA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9bd08d"/><stop offset="1" stop-color="#6db470"/></linearGradient>
-    <linearGradient id="kHillB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fa964"/><stop offset="1" stop-color="#2f7d4c"/></linearGradient>
-    <radialGradient id="kSun"><stop offset="0" stop-color="#fff3c4"/><stop offset=".6" stop-color="#ffd76a"/><stop offset="1" stop-color="#ffd76a" stop-opacity="0"/></radialGradient>
-    <linearGradient id="kWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9a46f"/><stop offset="1" stop-color="#cf8250"/></linearGradient>
+    <linearGradient id="kBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d2e21"/><stop offset="1" stop-color="#1f6b4f"/></linearGradient>
+    <linearGradient id="kArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".16"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+    <radialGradient id="kGlow" cx=".88" cy=".05" r=".65"><stop offset="0" stop-color="#e9c46a" stop-opacity=".22"/><stop offset="1" stop-color="#e9c46a" stop-opacity="0"/></radialGradient>
   </defs>
-  <rect width="420" height="${h}" fill="url(#kSky)"/>
-  <circle cx="340" cy="48" r="42" fill="url(#kSun)"/><circle cx="340" cy="48" r="17" fill="#ffd35c"/>
-  <g fill="#fff" opacity=".9"><ellipse cx="88" cy="40" rx="30" ry="9"/><ellipse cx="108" cy="33" rx="18" ry="10"/><ellipse cx="236" cy="58" rx="24" ry="7"/><ellipse cx="250" cy="52" rx="13" ry="7"/></g>
-  <path d="M0 ${h*0.66} Q 90 ${h*0.5} 190 ${h*0.62} T 420 ${h*0.58} V${h} H0Z" fill="url(#kHillA)"/>
-  <g transform="translate(236 ${h*0.36})">
-    <rect x="0" y="34" width="104" height="66" rx="3" fill="url(#kWall)"/>
-    <path d="M-12 38 L52 -2 L116 38 Z" fill="#7b3f2b"/><path d="M-12 38 L52 -2 L116 38" stroke="#5e2d1e" stroke-width="4" fill="none" stroke-linejoin="round"/>
-    <rect x="38" y="56" width="28" height="44" rx="2" fill="#f7efe4"/><path d="M38 56 l28 44 M66 56 l-28 44" stroke="#cf8250" stroke-width="3"/>
-    <circle cx="52" cy="22" r="10" fill="#f7efe4"/><circle cx="52" cy="22" r="7" fill="#5e2d1e"/>
-    <circle cx="55" cy="21" r="4.5" fill="#f6c945"/><path d="M58 21 l4 1 l-4 1.5z" fill="#e8892b"/><circle cx="56" cy="20" r=".9" fill="#18211b"/>
-    <path d="M8 46 h22 v12 h-22z M74 46 h22 v12 h-22z" fill="#f7efe4" opacity=".85"/>
-  </g>
-  <g stroke="#f7efe4" stroke-width="4" stroke-linecap="round" opacity=".95">
-    <path d="M10 ${h*0.74} H220"/><path d="M10 ${h*0.82} H220"/>
-    ${[18,58,98,138,178,214].map(x=>`<path d="M${x} ${h*0.7} V${h*0.88}"/>`).join("")}
-  </g>
-  <path d="M0 ${h*0.86} Q 120 ${h*0.74} 250 ${h*0.85} T 420 ${h*0.82} V${h} H0Z" fill="url(#kHillB)"/>
-  <g fill="#f1d58a" opacity=".85">${[[60,.93],[96,.95],[150,.92],[300,.94],[330,.96],[372,.93]].map(([x,f])=>`<circle cx="${x}" cy="${h*f}" r="1.8"/>`).join("")}</g>
-  ${chickSVG(70,h*0.84,1.05,false,true)}${chickSVG(128,h*0.88,0.8,true,false)}${chickSVG(196,h*0.86,0.95,false,false)}${chickSVG(372,h*0.85,0.7,true,false)}
+  <rect width="${W}" height="${h}" fill="url(#kBg)"/><rect width="${W}" height="${h}" fill="url(#kGlow)"/>
+  <g stroke="#fff" stroke-opacity=".08" stroke-width="1">${grid}</g>
+  <path d="${d}L${X(42)},${y0}L${X(0)},${y0}Z" fill="url(#kArea)"/>
+  <path class="curve" d="${d}" pathLength="1" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  ${ds.slice(0,-1).map(t=>`<circle cx="${X(t).toFixed(1)}" cy="${Y(t).toFixed(1)}" r="3.4" fill="#123d2c" stroke="#fff" stroke-width="1.6"/>`).join("")}
+  <circle cx="${X(42).toFixed(1)}" cy="${Y(42).toFixed(1)}" r="10" fill="#e9c46a" fill-opacity=".22"/><circle cx="${X(42).toFixed(1)}" cy="${Y(42).toFixed(1)}" r="5" fill="#e9c46a"/>
+  <g fill="#fff" fill-opacity=".55" font-family="Noto Sans, system-ui, sans-serif" font-size="9.5">${ds.map(t=>`<text x="${X(t).toFixed(1)}" y="${y0+16}" text-anchor="middle">${t}</text>`).join("")}<text x="${x1}" y="${y0+29}" text-anchor="end" fill-opacity=".4">gün</text></g>
   </svg>`;
 }
 
@@ -1548,7 +1532,7 @@ function viewGate(){
   const w=ST.want?.id;
   return `<section class="gate"><div class="gate-card">
     ${heroSVG()}
-    <div class="logo">Kümes<b style="color:var(--accent)">Takip</b></div>
+    <div class="logo">Kümes<span style="color:var(--accent)">Takip</span></div>
     <p class="muted" style="margin:0">Bireysel kanatlı takip</p>
     ${w?(/^K\d{1,3}$/.test(w)&&!ST.birds[w]?`<p style="margin:0">Okutulan: <b>Kümes ${esc(w.slice(1))}</b></p>`:`<p style="margin:0">Okutulan birey: <span class="tag ${esc(ST.birds[w]?.geno||"")}">${esc(w)}${pk(ST.birds[w])}</span></p>`):""}
     <button class="btn primary big" id="gVisitor">Ziyaretçi olarak gir</button>
@@ -1610,7 +1594,7 @@ function viewVisitorList(){
     ${heroSVG("hero-band",150)}
     <h2>Bireyler</h2>
     <form class="row" id="vForm"><input class="i mono" id="vq" placeholder="Kimlik ara, örnek: AT017" value="${esc(ST.vq||"")}" autocapitalize="characters" style="flex:1;min-width:160px"><button class="btn primary">Aç</button></form>
-    <div class="vlist">${l.slice(0,300).map((b,i)=>{const p=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,20)*40}ms"><div class="ph">${p?imgTag(p,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}${pk(b)}</span><span class="small">${esc(gname(b.geno))} · Kümes ${esc(b.pen)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")}</div>
+    <div class="vlist">${l.slice(0,300).map((b,i)=>{const p=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,8)*30}ms"><div class="ph">${p?imgTag(p,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}${pk(b)}</span><span class="small">${esc(gname(b.geno))} · Kümes ${esc(b.pen)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")}</div>
   </section>`;
 }
 function bindVisitorList(){
@@ -1631,7 +1615,7 @@ function viewVisitorBird(b){
     if(cw!=null&&pw!=null)rows.push(["Önceki tartımdan",`<span class="gain">+${fmt(cw-pw)} g</span> (${fmt((cw-pw)/(d-pd),1)} g/gün)`]);
     if(cw!=null&&pen)rows.push(["Kümes ortalaması",fmt(pen)+" g"]);
     ex.forEach(m=>{const v=w[m.k];if(v!==undefined&&v!==""&&v!=null)rows.push([flabel(m),esc(v)])});
-    return `<article class="wk" style="animation-delay:${i*160}ms">
+    return `<article class="wk" style="animation-delay:${Math.min(i,6)*60}ms">
       <a class="wk-photo" ${w.top?`href="${esc(photoSrc(w.top))}" target="_blank" rel="noopener"`:""}>${w.top?imgTag(w.top,b.id+" "+d+". gün"):"fotoğraf yok"}</a>
       <div class="stack" style="gap:8px"><div><div class="wk-day">${d}. gün</div><div class="small muted">${esc(trDate(w.date))}</div></div>
         <dl class="kv">${rows.map(r=>`<dt>${esc(r[0])}</dt><dd>${r[1]}</dd>`).join("")}</dl>
@@ -1650,7 +1634,7 @@ function viewVisitorBird(b){
   <section class="card stack"><div class="row" style="gap:10px"><span class="tag xl ${esc(g)}">${esc(b.id)}</span>${penBig(b)}</div>
     <div class="row small"><b>${esc(gname(g))}</b><span>Kümes ${esc(b.pen)}</span><span>Cinsiyet: ${esc(b.sex||"belirsiz")}</span><span class="pill ${st==="aktif"?"ok":st==="öldü"?"bad":""}">${esc(st)}</span></div></section>
   ${rec.length?`<div class="timeline">${items}</div>`:`<div class="empty">Bu birey için henüz tartım ya da fotoğraf girilmedi.</div>`}
-  <section class="card stack" style="animation:rise .6s both;animation-delay:${rec.length*160}ms"><h3>Genel bilgiler</h3>
+  <section class="card stack"><h3>Genel bilgiler</h3>
     ${k.length?`<div class="kpis">${k.map(x=>`<div class="kpi"><div class="v">${esc(x[1])}</div><div class="l">${esc(x[0])}</div></div>`).join("")}</div>`:""}
     ${ws.length>1?lineChart({series:[{pts:pm,color:mut,dash:"6 4"},{pts:own,color:col,dots:1,wd:2.5}]})+`<div class="legend"><span><i style="border-color:${col}"></i>${esc(b.id)}</span><span><i style="border-color:${mut};border-top-style:dashed"></i>Kümes ${esc(b.pen)} ortalaması</span></div>`:""}
   </section>
@@ -1671,7 +1655,7 @@ function viewVisitorPen(p){
     ${last?lineChart({series})+`<div class="legend"><span><i style="border-color:${colOf(g)}"></i>Kümes ${p}</span><span><i style="border-color:${mut};border-top-style:dotted"></i>Tüm ${esc(gname(g))} ortalaması</span>${gs.filter(x=>x!==g).map(x=>`<span><i style="border-color:${colOf(x)};border-top-style:dashed"></i>${esc(gname(x))} ortalaması</span>`).join("")}</div>`:`<p class="muted">Bu kümeste henüz tartım yapılmadı.</p>`}
   </section>
   <h3>Kümesteki bireyler</h3>
-  <div class="vlist">${bs.map((b,i)=>{const ph=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,20)*40}ms"><div class="ph">${ph?imgTag(ph,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}${pk(b)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")||`<div class="empty">Bu kümese henüz birey atanmadı.</div>`}</div>`;
+  <div class="vlist">${bs.map((b,i)=>{const ph=lastPhoto(b),lw=lastW(b);return `<button class="vcard" data-open="${esc(b.id)}" style="animation-delay:${Math.min(i,8)*30}ms"><div class="ph">${ph?imgTag(ph,b.id):"fotoğraf yok"}</div><span class="tag ${esc(b.geno)}" style="align-self:flex-start">${esc(b.id)}${pk(b)}</span><span class="small muted">${lw?`${lw[0]}. gün: ${fmt(lw[1])} g`:"tartım yok"}</span></button>`}).join("")||`<div class="empty">Bu kümese henüz birey atanmadı.</div>`}</div>`;
 }
 function bindVisitorPen(){$("#back").onclick=()=>{ST.curPen=null;render();window.scrollTo(0,0)};document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open))}
 function bindVisitorBird(){$("#back").onclick=()=>{ST.cur=null;render();window.scrollTo(0,0)}}
