@@ -1511,15 +1511,13 @@ function heroSVG(cls="hero",h=210){
   const X=t=>x0+(x1-x0)*t/42,Y=t=>y0-(y0-y1)*(f(t)-f0)/(f42-f0);
   let d="";for(let t=0;t<=42;t++)d+=(t?"L":"M")+X(t).toFixed(1)+","+Y(t).toFixed(1);
   const grid=ds.map(t=>`<path d="M${X(t).toFixed(1)} ${y1-12}V${y0}"/>`).join("")+[0,1,2,3].map(i=>`<path d="M${x0} ${(y0-(y0-y1)*i/3).toFixed(1)}H${x1}"/>`).join("");
+  const id="kBg"+(heroSVG.n=(heroSVG.n||0)+1);
+  /* yarı saydam renk geçişi yok: tarayıcının PDF'e kaydetmesinde ve baskıda renkler bozulmasın */
   return `<svg class="${cls}" viewBox="0 0 ${W} ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Bireysel büyüme eğrisi">
-  <defs>
-    <linearGradient id="kBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d2e21"/><stop offset="1" stop-color="#1f6b4f"/></linearGradient>
-    <linearGradient id="kArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".16"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
-    <radialGradient id="kGlow" cx=".88" cy=".05" r=".65"><stop offset="0" stop-color="#e9c46a" stop-opacity=".22"/><stop offset="1" stop-color="#e9c46a" stop-opacity="0"/></radialGradient>
-  </defs>
-  <rect width="${W}" height="${h}" fill="url(#kBg)"/><rect width="${W}" height="${h}" fill="url(#kGlow)"/>
+  <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d2e21"/><stop offset="1" stop-color="#1f6b4f"/></linearGradient></defs>
+  <rect width="${W}" height="${h}" fill="#164d38"/><rect width="${W}" height="${h}" fill="url(#${id})"/>
   <g stroke="#fff" stroke-opacity=".08" stroke-width="1">${grid}</g>
-  <path d="${d}L${X(42)},${y0}L${X(0)},${y0}Z" fill="url(#kArea)"/>
+  <path d="${d}L${X(42)},${y0}L${X(0)},${y0}Z" fill="#ffffff" fill-opacity=".07"/>
   <path class="curve" d="${d}" pathLength="1" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
   ${ds.slice(0,-1).map(t=>`<circle cx="${X(t).toFixed(1)}" cy="${Y(t).toFixed(1)}" r="3.4" fill="#123d2c" stroke="#fff" stroke-width="1.6"/>`).join("")}
   <circle cx="${X(42).toFixed(1)}" cy="${Y(42).toFixed(1)}" r="10" fill="#e9c46a" fill-opacity=".22"/><circle cx="${X(42).toFixed(1)}" cy="${Y(42).toFixed(1)}" r="5" fill="#e9c46a"/>
