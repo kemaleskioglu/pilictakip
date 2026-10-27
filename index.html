@@ -786,7 +786,6 @@ function viewBird(b){
     <div class="fgrid">
       <label class="f"><span>Canlı ağırlık <span class="u">(g)</span></span><input class="i num" id="w_w" inputmode="decimal" value="${esc(wk.w??"")}" placeholder="${exp?"≈ "+fmt(exp):""}"></label>
       ${ex.map(m=>field("x_"+m.k,m,wk[m.k])).join("")}
-      <label class="f"><span>Halka durumu</span><select class="i" id="w_band">${bandOpts().map(o=>`<option ${wk.band===o?"selected":""}>${esc(o)}</option>`).join("")}</select></label>
     </div>
     <div id="wWarn"></div>
     <div class="photoin">
@@ -805,8 +804,8 @@ function viewBird(b){
     ${gf?`<p class="small" style="margin:0">Gompertz: A = ${fmt(gf.A)} g · k = ${fmt(gf.k,4)} /gün · ti = ${fmt(gf.ti,1)} gün · maks. hız = ${fmt(gf.MGR,1)} g/gün · R² = ${fmt(gf.r2,3)}</p>`:""}
   </section>`;
   const table=`<section class="card"><h3>Tüm haftalar</h3>
-    <div class="tablewrap"><table class="t"><thead><tr><th>Gün</th><th>Tarih</th><th class="n">Ağırlık (g)</th><th class="n">Günlük artış (g)</th>${ex.map(m=>`<th class="n">${esc(flabel(m))}</th>`).join("")}<th>Halka</th><th>Not</th></tr></thead><tbody>
-    ${ds.map((x,i)=>{const w=b.weeks?.["d"+x]||{};const p=i?wOf(b,ds[i-1]):null;const c=wOf(b,x);return `<tr><td>${x}</td><td>${esc(trDate(w.date))}</td><td class="n">${fmt(c)}</td><td class="n">${c!=null&&p!=null?fmt((c-p)/(x-ds[i-1]),1):"—"}</td>${ex.map(m=>`<td class="n">${esc(w[m.k]??"")}</td>`).join("")}<td>${esc(w.band||"")}</td><td>${esc(w.note||"")}</td></tr>`}).join("")}
+    <div class="tablewrap"><table class="t"><thead><tr><th>Gün</th><th>Tarih</th><th class="n">Ağırlık (g)</th><th class="n">Günlük artış (g)</th>${ex.map(m=>`<th class="n">${esc(flabel(m))}</th>`).join("")}<th>Not</th></tr></thead><tbody>
+    ${ds.map((x,i)=>{const w=b.weeks?.["d"+x]||{};const p=i?wOf(b,ds[i-1]):null;const c=wOf(b,x);return `<tr><td>${x}</td><td>${esc(trDate(w.date))}</td><td class="n">${fmt(c)}</td><td class="n">${c!=null&&p!=null?fmt((c-p)/(x-ds[i-1]),1):"—"}</td>${ex.map(m=>`<td class="n">${esc(w[m.k]??"")}</td>`).join("")}<td>${esc(w.note||"")}</td></tr>`}).join("")}
     </tbody></table></div></section>`;
   return `<div class="row"><button class="btn ghost" id="back">← Geri</button></div>${head}${form}${growth}${table}${rw?secSlaughter(b)+secMeat(b)+secRna(b):roSections(b)}`;
 }
@@ -835,8 +834,8 @@ function groupBy(list){const o=[];list.forEach(f=>{const g=f.g||"Diğer";let e=o
 function secMeat(b){
   const m=b.meat||{},c=mCalc(m),on=FON("meat");
   return `<details class="sec" id="sec-et" ${ST.curSec==="et"?"open":""}><summary>Et kalitesi ${Object.values(m).some(v=>v!==""&&v!=null)?`<span class="pill ok">girildi</span>`:""}</summary><div class="body" data-form="et">
-  ${groupBy(on).map(s=>{const refs=[...new Set(s.f.map(f=>f.ref).filter(Boolean))];const keys=s.f.map(f=>f.k);return `<div class="sub">${esc(s.g)}</div><div class="fgrid">${s.f.map(f=>field("m_"+f.k,f,m[f.k])).join("")}
-    ${keys.includes("dm2")?`<div class="calc">Drip loss: ${fmt(c.drip,2)} %</div>`:""}${keys.includes("cm2")?`<div class="calc">Cooking loss: ${fmt(c.cook,2)} %</div>`:""}</div>${refs.length?`<div class="ref">${esc(refs.join(" · "))}</div>`:""}`}).join("")}
+  ${groupBy(on).map(s=>{const keys=s.f.map(f=>f.k);return `<div class="sub">${esc(s.g)}</div><div class="fgrid">${s.f.map(f=>field("m_"+f.k,f,m[f.k])).join("")}
+    ${keys.includes("dm2")?`<div class="calc">Drip loss: ${fmt(c.drip,2)} %</div>`:""}${keys.includes("cm2")?`<div class="calc">Cooking loss: ${fmt(c.cook,2)} %</div>`:""}</div>`}).join("")}
     <div class="row"><button class="btn primary" id="saveM">Et kalitesini kaydet</button></div>
   </div></details>`;
 }
@@ -884,7 +883,7 @@ function bindBird(){
   const saveWeek=async next=>{
     const btns=[$("#saveWeek"),$("#saveNext")];btns.forEach(x=>x.disabled=true);
     try{
-      const patch={w:val("w_w")===""?"":String(num(val("w_w"))??""),band:val("w_band"),note:val("w_note"),date:dateOfDay(d)||todayISO(),at:new Date().toISOString()};
+      const patch={w:val("w_w")===""?"":String(num(val("w_w"))??""),note:val("w_note"),date:dateOfDay(d)||todayISO(),at:new Date().toISOString()};
       FON("weekly").forEach(m=>{const v=val("x_"+m.k);if(v!==undefined)patch[m.k]=ftype(m)==="num"?(v===""?"":String(num(v)??v)):v});
       for(const slot of ["top","side"])if(pend[slot]){toast("Fotoğraf yükleniyor…",8000);const r=await Store.putPhoto(pend[slot],id);if(r)patch[slot]=r}
       if(pend.top&&pendSeg)Object.assign(patch,pendSeg);
@@ -1052,7 +1051,7 @@ function viewRna(){
       ${q.length?`<div class="tablewrap"><table class="t"><thead><tr><th>Gen</th>${gs.map(g=>`<th class="n">ΔCt ${esc(gname(g))}</th>`).join("")}<th class="n">ΔΔCt</th><th class="n">Kat değişim</th></tr></thead><tbody>${q.map(r=>`<tr><td class="mono">${esc(r.gene)}</td>${gs.map(g=>`<td class="n">${fmt(r.d[g],2)} <span class="muted">(${r.n[g]||0})</span></td>`).join("")}<td class="n">${fmt(r.dd,2)}</td><td class="n"><b>${fmt(r.fc,2)}</b></td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">Ct değerleri birey kartlarındaki RNA-seq bölümüne girilince özet burada hesaplanır.</p>`}
     </div>
     <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Farklı ifade edilen genler (DESeq2)</h3><button class="btn" id="degUp">CSV yükle</button></div>
-      <p class="small muted">DESeq2 <span class="mono">results()</span> tablosunu CSV olarak yükle (sütunlar: gen adı, <span class="mono">log2FoldChange</span>, <span class="mono">padj</span>). Eşik: FDR &lt; 0,05 ve |log2FC| ≥ 1. Aday gen paneli Ayarlar'dan değiştirilir.</p>
+      <p class="small muted">DESeq2 <span class="mono">results()</span> tablosunu CSV olarak yükle (sütunlar: gen adı, <span class="mono">log2FoldChange</span>, <span class="mono">padj</span>). Eşik: FDR &lt; 0,05 ve |log2FC| ≥ 1.</p>
       <div id="degBox">${ST.rna?.file?`<p class="muted small">Yükleniyor: ${esc(ST.rna.file)}</p>`:`<div class="empty">Dizileme sonuçları gelince buraya yüklenecek.</div>`}</div>
     </div>
   </section>`;
@@ -1132,14 +1131,14 @@ function feRow(grp,f){
   const t=ftype(f);
   return `<tr data-k="${esc(f.k)}"><td><input type="checkbox" data-p="on" ${f.on!==false?"checked":""} aria-label="Açık"></td>${grp==="meat"?`<td><input class="i" data-p="g" value="${esc(f.g||"")}"></td>`:""}<td><input class="i" data-p="l" value="${esc(f.l)}" placeholder="Ölçümün adı"></td><td><input class="i" data-p="u" value="${esc(f.u||"")}" style="min-width:70px"></td>
   <td><select class="i" data-p="t"><option value="num" ${t==="num"?"selected":""}>Sayı</option><option value="score" ${t==="score"?"selected":""}>Skor (liste)</option><option value="text" ${t==="text"?"selected":""}>Metin</option></select></td>
-  <td><input class="i mono" data-p="opts" value="${esc((f.opts||[]).join(", "))}" placeholder="0, 1, 2"></td><td><input class="i" data-p="ref" value="${esc(f.ref||"")}"></td>
+  <td><input class="i mono" data-p="opts" value="${esc((f.opts||[]).join(", "))}" placeholder="0, 1, 2"></td>
   <td><button class="btn ghost" data-mv="-1" type="button" aria-label="Yukarı taşı">↑</button><button class="btn ghost" data-mv="1" type="button" aria-label="Aşağı taşı">↓</button>${f.custom?`<button class="btn ghost" data-fedel type="button" style="color:var(--bad)">Sil</button>`:""}</td></tr>`;
 }
 function fieldEditor(grp){
   const l=FL(grp);
   return `<details class="sec" id="fe-${grp}" ${ST.openFE===grp?"open":""}><summary>${esc(GROUPS[grp])} <span class="pill">${l.filter(f=>f.on!==false).length}/${l.length} açık</span></summary><div class="body" data-form="fe-${grp}">
     <p class="small muted">Adı, birimi ve türü düzeltebilir, sırasını değiştirebilir, kapatabilir ya da yeni ölçüm ekleyebilirsin. Ad değişse de girilmiş veriler korunur. Hazır ölçümler silinmez, kapatılır.</p>
-    <div class="tablewrap"><table class="t fe" id="fet-${grp}"><thead><tr><th>Açık</th>${grp==="meat"?"<th>Alt başlık</th>":""}<th>Ad</th><th>Birim</th><th>Tür</th><th>Skor seçenekleri</th><th>Kaynak / not</th><th></th></tr></thead><tbody>${l.map(f=>feRow(grp,f)).join("")}</tbody></table></div>
+    <div class="tablewrap"><table class="t fe" id="fet-${grp}"><thead><tr><th>Açık</th>${grp==="meat"?"<th>Alt başlık</th>":""}<th>Ad</th><th>Birim</th><th>Tür</th><th>Skor seçenekleri</th><th></th></tr></thead><tbody>${l.map(f=>feRow(grp,f)).join("")}</tbody></table></div>
     <div class="row"><button class="btn" data-feadd="${grp}" type="button">Ölçüm ekle</button><button class="btn primary" data-fesave="${grp}" type="button">Kaydet</button><button class="btn ghost" data-ferst="${grp}" type="button">Varsayılana dön</button></div>
   </div></details>`;
 }
@@ -1148,12 +1147,12 @@ function readFE(grp){
   return [...document.querySelectorAll(`#fet-${grp} tbody tr`)].map(tr=>{
     const k=tr.dataset.k,o=clone(old.find(f=>f.k===k)||{k,custom:true});
     const g=p=>tr.querySelector(`[data-p="${p}"]`);
-    o.on=g("on").checked;o.l=g("l").value.trim()||"Adsız ölçüm";o.u=g("u").value.trim();o.ref=g("ref").value.trim();
+    o.on=g("on").checked;o.l=g("l").value.trim()||"Adsız ölçüm";o.u=g("u").value.trim();
     if(g("g"))o.g=g("g").value.trim()||"Diğer";
     const t=g("t").value;
     if(t==="score"){o.opts=g("opts").value.split(/[;,]+/).map(s=>s.trim()).filter(Boolean).map(s=>{const n=num(s);return n!=null&&/^-?\d+([.,]\d+)?$/.test(s)?n:s});if(!o.opts.length)o.opts=[0,1,2,3];delete o.t}
     else{delete o.opts;if(t==="text")o.t="text";else delete o.t}
-    if(!o.u)delete o.u;if(!o.ref)delete o.ref;
+    if(!o.u)delete o.u;
     return o;
   });
 }
@@ -1169,10 +1168,6 @@ function viewSettings(){
       <label class="f"><span>Tartım günleri</span><input class="i mono" id="c_days" value="${esc(days().join(", "))}"></label>
       <label class="f"><span>Kümes sayısı</span><input class="i num" id="c_pens" inputmode="numeric" value="${pc}"></label>
       ${gs.map(g=>`<label class="f"><span>${esc(g)} kodlu genotipin adı</span><input class="i" id="c_g_${esc(g)}" value="${esc(gname(g))}"></label>`).join("")}
-      <label class="f"><span>qPCR kontrol grubu</span><select class="i" id="c_ctrl">${gs.map(g=>`<option value="${esc(g)}" ${c.ctrl===g?"selected":""}>${esc(gname(g))}</option>`).join("")}</select></label>
-      <label class="f"><span>qPCR referans gen</span><input class="i mono" id="c_ref" value="${esc(c.refGene)}"></label>
-      <label class="f" style="grid-column:1/-1"><span>Halka durumu seçenekleri (virgülle)</span><input class="i" id="c_band" value="${esc(c.bandOpts||"")}"></label>
-      <label class="f" style="grid-column:1/-1"><span>Aday gen paneli (virgülle)</span><textarea class="i mono" id="c_cand" rows="2">${esc(candList().join(", "))}</textarea></label>
     </div>
     <div class="sub">Hedef canlı ağırlık eğrileri (g)</div>
     <div class="tablewrap"><table class="t"><thead><tr><th>Genotip</th>${days().map(d=>`<th>${d}. gün</th>`).join("")}</tr></thead><tbody>${gs.map(g=>`<tr><td>${esc(gname(g))}</td>${days().map(d=>`<td><input class="i num" data-tg="${esc(g)}:${d}" inputmode="decimal" value="${esc(c.targets?.[g]?.[d]??"")}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>
@@ -1214,7 +1209,7 @@ function viewSettings(){
 BIND.ayar=()=>{
   $("#saveCfg").onclick=async()=>{
     const ds=val("c_days").split(/[,\s;]+/).map(Number).filter(x=>isFinite(x)&&x>=0);
-    const c={trial:val("c_trial"),startDate:val("c_start"),days:[...new Set(ds)].sort((a,b)=>a-b),penCount:Math.max(1,Math.min(50,parseInt(val("c_pens"))||6)),geno:{},ctrl:val("c_ctrl"),refGene:val("c_ref"),bandOpts:val("c_band"),cand:val("c_cand"),targets:{}};
+    const c={trial:val("c_trial"),startDate:val("c_start"),days:[...new Set(ds)].sort((a,b)=>a-b),penCount:Math.max(1,Math.min(50,parseInt(val("c_pens"))||6)),geno:{},targets:{}};
     Object.keys(G()).forEach(g=>c.geno[g]=val("c_g_"+g)||g);
     document.querySelectorAll("[data-tg]").forEach(x=>{const [g,d]=x.dataset.tg.split(":");(c.targets[g]=c.targets[g]||{})[d]=num(x.value)});
     ST.config.days=c.days;ST.config.targets={};
@@ -1308,7 +1303,7 @@ async function labelPDF(){
 const photoName=(b,d,t)=>`${b.id}_${d}gün_${t}.jpg`;
 function longRows(){
   const ex=FON("weekly");const out=[];
-  birdList().forEach(b=>days().forEach(d=>{const w=b.weeks?.["d"+d];if(!w)return;const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Gün":d,"Tarih":trDate(w.date),"Canlı ağırlık (g)":num(w.w)};ex.forEach(m=>r[flabel(m)]=ftype(m)==="text"?(w[m.k]||""):num(w[m.k]));r["Üstten alan (cm²)"]=num(w.area);r["Halka durumu"]=w.band||"";r["Üstten fotoğraf"]=w.top?photoName(b,d,"üst"):"";r["Yandan fotoğraf"]=w.side?photoName(b,d,"yan"):"";r["Not"]=w.note||"";out.push(r)}));
+  birdList().forEach(b=>days().forEach(d=>{const w=b.weeks?.["d"+d];if(!w)return;const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Gün":d,"Tarih":trDate(w.date),"Canlı ağırlık (g)":num(w.w)};ex.forEach(m=>r[flabel(m)]=ftype(m)==="text"?(w[m.k]||""):num(w[m.k]));r["Üstten alan (cm²)"]=num(w.area);r["Üstten fotoğraf"]=w.top?photoName(b,d,"üst"):"";r["Yandan fotoğraf"]=w.side?photoName(b,d,"yan"):"";r["Not"]=w.note||"";out.push(r)}));
   return out;
 }
 async function exportXLSX(){
