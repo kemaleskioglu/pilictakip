@@ -840,17 +840,13 @@ function secMeat(b){
   </div></details>`;
 }
 function secRna(b){
-  const r=b.rnaseq||{},q=r.qpcr||[];
+  const r=b.rnaseq||{};
   return `<details class="sec" id="sec-rna" ${ST.curSec==="rna"?"open":""}><summary>RNA-seq örneği ${b.rna?`<span class="pill warn">seçildi</span>`:""}</summary><div class="body" data-form="rna">
     <label class="row small"><input type="checkbox" id="r_flag" ${b.rna?"checked":""}> Bu birey RNA-seq örneği</label>
     <div class="fgrid">${FON("rna").map(f=>field("r_"+f.k,f,r[f.k])).join("")}</div>
-    <div class="sub">qRT-PCR (referans gen: ${esc(ST.config.refGene)})</div>
-    <div class="tablewrap"><table class="t" id="qTable"><thead><tr><th>Gen</th><th class="n">Hedef Ct</th><th class="n">${esc(ST.config.refGene)} Ct</th><th class="n">ΔCt</th><th></th></tr></thead><tbody>
-    ${q.map(x=>qRow(x)).join("")}</tbody></table></div>
-    <div class="row"><button class="btn" id="qAdd" type="button">Gen ekle</button><button class="btn primary" id="saveR">RNA-seq verisini kaydet</button></div>
+    <div class="row"><button class="btn primary" id="saveR">RNA-seq verisini kaydet</button></div>
   </div></details>`;
 }
-const qRow=x=>`<tr><td><input class="i mono" data-k="gene" value="${esc(x.gene||"")}" style="min-width:90px"></td><td><input class="i num" data-k="ct" inputmode="decimal" value="${esc(x.ct??"")}"></td><td><input class="i num" data-k="ref" inputmode="decimal" value="${esc(x.ref??"")}"></td><td class="n">${num(x.ct)!=null&&num(x.ref)!=null?fmt(num(x.ct)-num(x.ref),2):"—"}</td><td><button class="btn ghost" data-qdel type="button">Sil</button></td></tr>`;
 const val=id=>{const e=document.getElementById(id);return e?e.value.trim():undefined};
 function collect(prefix,list){const o={};list.forEach(m=>{const v=val(prefix+m.k);if(v===undefined)return;o[m.k]=ftype(m)==="num"?(v===""?"":String(num(v)??v)):v});return o}
 function clearDirty(f){const e=document.querySelector(`[data-form="${f}"]`);if(e)e.dataset.dirty=""}
@@ -898,11 +894,8 @@ function bindBird(){
   $("#editBird").onclick=()=>editBirdDlg(b);
   $("#saveS").onclick=async()=>{const o=collect("s_",FL("slaughter"));o.date=val("s_date");if(await Store.patch("birds/"+id,{slaughter:o,status:o.fastedW?"kesildi":b.status||"aktif"})){clearDirty("kesim");toast("Kesim verisi kaydedildi");ST.curSec="kesim";render()}};
   $("#saveM").onclick=async()=>{if(await Store.patch("birds/"+id,{meat:collect("m_",FL("meat"))})){clearDirty("et");toast("Et kalitesi kaydedildi");ST.curSec="et";render()}};
-  const bindQ=()=>document.querySelectorAll("[data-qdel]").forEach(x=>x.onclick=()=>{x.closest("tr").remove();document.querySelector('[data-form="rna"]').dataset.dirty="1"});bindQ();
-  $("#qAdd").onclick=()=>{$("#qTable tbody").insertAdjacentHTML("beforeend",qRow({}));bindQ()};
   $("#saveR").onclick=async()=>{
     const o=collect("r_",FL("rna"));
-    o.qpcr=[...document.querySelectorAll("#qTable tbody tr")].map(tr=>{const x={};tr.querySelectorAll("[data-k]").forEach(i=>x[i.dataset.k]=i.value.trim());return x}).filter(x=>x.gene||x.ct||x.ref);
     if(await Store.patch("birds/"+id,{rna:$("#r_flag").checked,rnaseq:o})){clearDirty("rna");toast("RNA-seq verisi kaydedildi");ST.curSec="rna";render()}
   };
 }
@@ -1038,7 +1031,7 @@ BIND.et=()=>{
 let DEG=null;
 const candList=()=>(ST.config.cand||"").split(/[,\s]+/).filter(Boolean).map(up);
 function viewRna(){
-  const rb=birdList().filter(b=>b.rna),gs=Object.keys(G()),q=qpcrSummary(rb);
+  const rb=birdList().filter(b=>b.rna),gs=Object.keys(G());
   return `<section class="stack">
     <h2>RNA-seq</h2>
     <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Örnek bireyler <span class="muted small">${rb.length}</span></h3><button class="btn" id="suggest">Seçim kuralına göre öner</button></div>
@@ -1047,19 +1040,11 @@ function viewRna(){
       ${rb.map(b=>{const r=b.rnaseq||{};const low=num(r.rin)!=null&&num(r.rin)<7;return `<tr class="click" data-open="${esc(b.id)}"><td><span class="tag ${esc(b.geno)}">${esc(b.id)}</span></td><td>${esc(b.pen)}</td><td class="mono">${esc(r.code||"")}</td><td class="n">${fmt(num(b.slaughter?.fastedW)??wOf(b,days().slice(-1)[0]))}</td><td class="n">${esc(r.conc||"")}</td><td class="n">${esc(r.r280||"")}</td><td class="n">${esc(r.r230||"")}</td><td class="n">${low?`<span class="pill bad">${esc(r.rin)}</span>`:esc(r.rin||"")}</td><td class="n">${esc(r.clean||r.raw||"")}</td><td class="n">${esc(r.map||"")}</td><td class="mono">${esc(r.sra||"")}</td></tr>`}).join("")}
       </tbody></table></div><p class="ref">RIN 7'nin altı kırmızı işaretlenir.</p>`:`<div class="empty">Henüz RNA-seq bireyi işaretlenmedi. Birey kartındaki RNA-seq bölümünden ya da "öner" ile seç.</div>`}
     </div>
-    <div class="card stack"><h3>qRT-PCR doğrulama (2<sup>−ΔΔCt</sup>, kontrol: ${esc(gname(ST.config.ctrl))})</h3>
-      ${q.length?`<div class="tablewrap"><table class="t"><thead><tr><th>Gen</th>${gs.map(g=>`<th class="n">ΔCt ${esc(gname(g))}</th>`).join("")}<th class="n">ΔΔCt</th><th class="n">Kat değişim</th></tr></thead><tbody>${q.map(r=>`<tr><td class="mono">${esc(r.gene)}</td>${gs.map(g=>`<td class="n">${fmt(r.d[g],2)} <span class="muted">(${r.n[g]||0})</span></td>`).join("")}<td class="n">${fmt(r.dd,2)}</td><td class="n"><b>${fmt(r.fc,2)}</b></td></tr>`).join("")}</tbody></table></div>`:`<p class="muted small">Ct değerleri birey kartlarındaki RNA-seq bölümüne girilince özet burada hesaplanır.</p>`}
-    </div>
     <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Farklı ifade edilen genler (DESeq2)</h3><button class="btn" id="degUp">CSV yükle</button></div>
       <p class="small muted">DESeq2 <span class="mono">results()</span> tablosunu CSV olarak yükle (sütunlar: gen adı, <span class="mono">log2FoldChange</span>, <span class="mono">padj</span>). Eşik: FDR &lt; 0,05 ve |log2FC| ≥ 1.</p>
       <div id="degBox">${ST.rna?.file?`<p class="muted small">Yükleniyor: ${esc(ST.rna.file)}</p>`:`<div class="empty">Dizileme sonuçları gelince buraya yüklenecek.</div>`}</div>
     </div>
   </section>`;
-}
-function qpcrSummary(rb){
-  const by={};rb.forEach(b=>(b.rnaseq?.qpcr||[]).forEach(x=>{const ct=num(x.ct),rf=num(x.ref);if(!x.gene||ct==null||rf==null)return;const g=up(x.gene);by[g]=by[g]||{};(by[g][b.geno]=by[g][b.geno]||[]).push(ct-rf)}));
-  const c=ST.config.ctrl,gs=Object.keys(G()),o=gs.find(g=>g!==c);
-  return Object.entries(by).map(([gene,v])=>{const d={},n={};gs.forEach(g=>{d[g]=mean(v[g]||[]);n[g]=(v[g]||[]).length});const dd=d[o]!=null&&d[c]!=null?d[o]-d[c]:null;return {gene,d,n,dd,fc:dd!=null?Math.pow(2,-dd):null}});
 }
 function parseCSV(t){
   t=t.replace(/^﻿/,"");const first=t.split("\n")[0];const sep=first.includes("\t")?"\t":first.includes(";")&&!first.includes(",")?";":",";
@@ -1316,7 +1301,6 @@ async function exportXLSX(){
   add("Kesim",birdList().filter(b=>b.slaughter).map(b=>{const c=sCalc(b.slaughter);const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Kesim tarihi":trDate(b.slaughter.date)};FL("slaughter").forEach(m=>r[flabel(m)]=ftype(m)==="text"?(b.slaughter[m.k]||""):num(b.slaughter[m.k]));Object.assign(r,{"Karkas randımanı (%)":c.yield,"Göğüs eti / karkas (%)":c.breast,"But / karkas (%)":c.thigh,"Abdominal yağ / canlı ağırlık (%)":c.fat});return r}));
   add("Et kalitesi",birdList().filter(b=>b.meat).map(b=>{const c=mCalc(b.meat);const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||""};FL("meat").forEach(f=>r[(f.g?f.g+": ":"")+flabel(f)]=ftype(f)==="text"?(b.meat[f.k]||""):num(b.meat[f.k]));r["Drip loss (%)"]=c.drip;r["Cooking loss (%)"]=c.cook;return r}));
   add("RNA-seq",birdList().filter(b=>b.rna||b.rnaseq).map(b=>{const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Seçildi":b.rna?"evet":""};FL("rna").forEach(f=>r[flabel(f)]=ftype(f)==="text"?(b.rnaseq?.[f.k]||""):num(b.rnaseq?.[f.k]));return r}));
-  const q=[];birdList().forEach(b=>(b.rnaseq?.qpcr||[]).forEach(x=>q.push({"Kimlik":b.id,"Genotip":gname(b.geno),"Gen":x.gene,"Hedef Ct":num(x.ct),"Referans Ct":num(x.ref),"ΔCt":num(x.ct)!=null&&num(x.ref)!=null?num(x.ct)-num(x.ref):null})));add("qPCR",q);
   add("Gompertz",birdList().map(b=>{const f=birdGomp(b);return f?{"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","A (g)":f.A,"k (1/gün)":f.k,"ti (gün)":f.ti,"Wi (g)":f.Wi,"Maks. büyüme hızı (g/gün)":f.MGR,"R²":f.r2,"Tartım sayısı":f.n}:null}).filter(Boolean));
   const ap=areaPairs(null);add("Görüntü-ağırlık",ap.map(p=>({"Kimlik":p.b,"Genotip":gname(p.g),"Gün":p.d,"Alan (cm²)":p.a,"Canlı ağırlık (g)":p.y,"Tahmin (g)":predictW(p.g,p.a)})));
   const buf=X.write(wb,{type:"array",bookType:"xlsx"});
