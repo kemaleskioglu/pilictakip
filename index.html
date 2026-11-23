@@ -868,9 +868,9 @@ function bindBird(){
       if(slot==="top"){
         const si=$("#segInfo");
         if(!ST.config.calib?.pxPerCm){si.innerHTML=`<span class="muted">Fotoğraftan alan ölçmek için önce Analiz → Kalibrasyon yap.</span>`;pendSeg=null}
-        else{const seg=segmentBird(canvas),a=areaCm2(seg);pendSeg=a?{area:Math.round(a*10)/10,areaPx:Math.round(seg.px)}:null;
+        else{si.innerHTML=`<span class="muted">${(ST.config.segMethod||"dl")==="dl"&&!DLM.seg?"Derin öğrenme modeli yükleniyor (ilk seferde ~12 MB)…":"Birey ayrılıyor…"}</span>`;const seg=await segmentAuto(canvas),a=areaCm2(seg);pendSeg=a?{area:Math.round(a*10)/10,areaPx:Math.round(seg.px),segm:seg.method}:null;
           const pw=a?predictW(b.geno,a):null;
-          si.innerHTML=a?`<div class="row" style="align-items:center"><img src="${seg.preview}" alt="Ayrılan bölge" style="width:120px;border-radius:6px"><span>Kapladığı alan: <b>${fmt(a,1)} cm²</b>${pw?` · fotoğraftan tahmin ≈ <b>${fmt(pw)} g</b>`:""}<br><span class="muted">Kırmızı bölge birey olarak ölçüldü. Yanlışsa zemini sadeleştirip yeniden çek.</span></span></div>`:`<span class="muted">Birey zeminden ayrılamadı; tek renk zeminde yeniden çek.</span>`}
+          si.innerHTML=a?`<div class="row" style="align-items:center"><img src="${seg.preview}" alt="Ayrılan bölge" style="width:120px;border-radius:6px"><span>Kapladığı alan: <b>${fmt(a,1)} cm²</b>${pw?` · fotoğraftan tahmin ≈ <b>${fmt(pw)} g</b>`:""}<br><span class="muted">Kırmızı bölge birey olarak ölçüldü · ${esc(segName(seg.method))}. Yanlışsa yeniden çek.</span></span></div>`:`<span class="muted">Birey zeminden ayrılamadı; tek renk zeminde yeniden çek.</span>`}
       }
       const qid=await decodeQR(canvas).catch(()=>null);
       if(qid&&qid!==id)dlg(`<h3>Etiket uyuşmuyor</h3><p>Fotoğraftaki QR <b class="mono">${esc(qid)}</b>, açık kart <b class="mono">${esc(id)}</b>. Yanlış birey olabilir; kaydetmeden önce kontrol et.</p>`,null);
@@ -1036,7 +1036,7 @@ function viewRna(){
   return `<section class="stack">
     <h2>RNA-seq</h2>
     <div class="card stack"><h3>Örnek seçimi</h3>
-      <p class="small muted" style="margin:0">Sıralanacak bireyler, tartım ve fotoğraf verisinden çıkan büyüme profiline göre önceden belirlenen kuralla seçilir. Kural ve sonuç kaydedilir; aynı veriyle her zaman aynı bireyler çıkar.</p>
+      <p class="small muted" style="margin:0">Sıralanacak bireyler, tartım ve fotoğraf verisinden çıkan büyüme profiline göre önceden belirlenen kuralla ya da makine öğrenmesiyle (k-medoids, Isolation Forest) seçilir. Kural ve sonuç kaydedilir; aynı veriyle her zaman aynı bireyler çıkar.</p>
       <div class="stack" id="selBody">${selBody()}</div>
     </div>
     <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Örnek bireyler <span class="muted small">${rb.length}</span></h3></div>
@@ -1100,10 +1100,39 @@ BIND.rna=()=>{
   if(DEG)$("#degBox").innerHTML=degHTML(DEG)+`<p class="ref">${esc(ST.rna.file||"")}</p>`;
   else if(ST.rna?.asset){const a=ST.rna.asset;(a.startsWith("local:")?IDB.get(a):fetch(photoSrc(a)).then(r=>r.ok?r.text():null)).then(t=>{if(!t)return;DEG=degFromText(t);const b=$("#degBox");if(b)b.innerHTML=degHTML(DEG)+`<p class="ref">${esc(ST.rna.file||"")}</p>`}).catch(()=>{})}
 };
+/* ============ Makine öğrenmesi: k-medoids (PAM) ve Isolation Forest ============
+   İkisi de deterministiktir: PAM'in başlangıcı BUILD adımıyla seçilir; Isolation Forest sabit tohumlu rastgele sayı üreteciyle kurulur. */
+function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const eucl=(a,b)=>Math.sqrt(a.reduce((s,v,i)=>s+(v-b[i])**2,0));
+function pam(X,k){
+  const n=X.length;if(n<k||k<1)return null;
+  const D=X.map(a=>X.map(b=>eucl(a,b)));
+  const med=[];const near=new Array(n).fill(Infinity);
+  /* BUILD: ilk medoid toplam uzaklığı en küçük nokta; sonrakiler toplam maliyeti en çok düşüren nokta */
+  let best=-1,bc=Infinity;for(let i=0;i<n;i++){const c=D[i].reduce((s,v)=>s+v,0);if(c<bc){bc=c;best=i}}med.push(best);for(let j=0;j<n;j++)near[j]=D[best][j];
+  while(med.length<k){let bi=-1,bg=-Infinity;for(let i=0;i<n;i++){if(med.includes(i))continue;let g=0;for(let j=0;j<n;j++)g+=Math.max(0,near[j]-D[i][j]);if(g>bg){bg=g;bi=i}}med.push(bi);for(let j=0;j<n;j++)near[j]=Math.min(near[j],D[bi][j])}
+  const cost=m=>{let c=0;for(let j=0;j<n;j++){let v=Infinity;for(const i of m)v=Math.min(v,D[i][j]);c+=v}return c};
+  /* SWAP: maliyeti düşüren medoid–nokta değişimleri, iyileşme kalmayana kadar */
+  let cur=cost(med);for(let it=0;it<50;it++){let imp=false;for(let a=0;a<k;a++)for(let h=0;h<n;h++){if(med.includes(h))continue;const m2=med.slice();m2[a]=h;const c2=cost(m2);if(c2<cur-1e-12){med.splice(0,k,...m2);cur=c2;imp=true}}if(!imp)break}
+  const lab=X.map((_,j)=>{let bi=0,bv=Infinity;med.forEach((i,c)=>{if(D[i][j]<bv){bv=D[i][j];bi=c}});return bi});
+  /* siluet katsayısı */
+  const sil=X.map((_,j)=>{const own=lab[j];const avg=c=>{const m=lab.map((l,i)=>l===c&&i!==j?D[j][i]:null).filter(v=>v!=null);return m.length?mean(m):0};const a=avg(own);let b=Infinity;for(let c=0;c<k;c++)if(c!==own&&lab.some(l=>l===c))b=Math.min(b,avg(c));if(!isFinite(b))return 0;const sz=lab.filter(l=>l===own).length;return sz<2?0:(b-a)/Math.max(a,b)});
+  return {med,lab,cost:cur,sil:mean(sil),D};
+}
+function bestPam(X,kmax=6){let best=null;for(let k=2;k<=Math.min(kmax,Math.floor(X.length/5));k++){const r=pam(X,k);if(r&&(!best||r.sil>best.sil+1e-9))best={...r,k}}return best}
+function isoForest(X,{trees=200,psi=64,seed=20261123}={}){
+  const n=X.length;if(n<8)return X.map(()=>null);const rnd=mulberry32(seed),d=X[0].length,sub=Math.min(psi,n);
+  const cN=m=>m<=1?0:2*(Math.log(m-1)+0.5772156649)-2*(m-1)/m,lim=Math.ceil(Math.log2(sub));
+  const build=(idx,h)=>{if(h>=lim||idx.length<=1)return {size:idx.length};const q=Math.floor(rnd()*d);let lo=Infinity,hi=-Infinity;idx.forEach(i=>{lo=Math.min(lo,X[i][q]);hi=Math.max(hi,X[i][q])});if(hi-lo<1e-12)return {size:idx.length};const p=lo+rnd()*(hi-lo);return {q,p,l:build(idx.filter(i=>X[i][q]<p),h+1),r:build(idx.filter(i=>X[i][q]>=p),h+1)}};
+  const forest=[];for(let t=0;t<trees;t++){const all=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[all[i],all[j]]=[all[j],all[i]]}forest.push(build(all.slice(0,sub),0))}
+  const path=(x,nd,h)=>nd.size!=null?h+cN(nd.size):path(x,x[nd.q]<nd.p?nd.l:nd.r,h+1);
+  return X.map(x=>Math.pow(2,-mean(forest.map(t=>path(x,t,0)))/cN(sub)));
+}
+
 /* ============ RNA-seq örnek seçimi ============
    Kural kesimden önce belirlenir. Aynı veriyle her zaman aynı bireyleri verir (rastgelelik yok; eşitlikte kimlik sırası).
    Özellikler genotip içinde medyan ve MAD ile standartlaştırılır (aykırı bireyler ölçeği bozmasın diye). */
-const SEL_DEF={n:4,res:2,mode:"temsili",male:true,spread:true,myo:true,myoCut:2};
+const SEL_DEF={n:4,res:2,mode:"temsili",male:true,spread:true,myo:true,myoCut:2,iso:true,isoCut:0.6};
 const SEL_FEATS={lw:"son tartım ağırlığı",MGR:"Gompertz maksimum büyüme hızı",ti:"büküm noktası yaşı",adg:"ortalama günlük artış"};
 function selOpts(){return Object.assign({},SEL_DEF,ST.rna?.sel?.opts||{},ST.selOpts||{})}
 function rnaFeat(b){
@@ -1121,7 +1150,7 @@ function pickSpread(list,k,cap,spread){
 function computeSel(o){
   o=o||selOpts();const out=[];
   Object.keys(G()).forEach(g=>{
-    const all=birdList().filter(b=>b.geno===g),ex={gone:[],sex:[],nosex:[],nodata:[],myo:[]},pool=[];
+    const all=birdList().filter(b=>b.geno===g),ex={gone:[],sex:[],nosex:[],nodata:[],myo:[],out:[]},pool=[];
     all.forEach(b=>{
       if(b.status==="öldü"||b.status==="çıkarıldı")return ex.gone.push(b);
       if(o.male&&b.sex!=="erkek")return (b.sex?ex.sex:ex.nosex).push(b);
@@ -1132,9 +1161,12 @@ function computeSel(o){
     });
     const gompN=pool.filter(x=>x.f.MGR!=null).length;
     const feats=pool.length&&gompN>=0.8*pool.length?["lw","MGR","ti"]:["lw","adg"];
-    const use=pool.filter(x=>feats.every(k=>x.f[k]!=null));pool.filter(x=>!use.includes(x)).forEach(x=>ex.nodata.push(x.b));
+    let use=pool.filter(x=>feats.every(k=>x.f[k]!=null));pool.filter(x=>!use.includes(x)).forEach(x=>ex.nodata.push(x.b));
     const Z={};feats.forEach(k=>Z[k]=robustZ(use.map(x=>x.f[k])));
     use.forEach(x=>{x.z={};feats.forEach(k=>x.z[k]=Z[k](x.f[k]));x.d=Math.sqrt(feats.reduce((s,k)=>s+x.z[k]**2,0)/feats.length);x.idx=(x.z.lw+(x.z.MGR??x.z.adg))/2});
+    const outl=[];
+    if(o.iso){const sc=isoForest(use.map(x=>feats.map(k=>x.z[k])));use.forEach((x,i)=>x.iso=sc[i]);use.filter(x=>x.iso!=null&&x.iso>=o.isoCut).forEach(x=>{ex.out.push(x.b);outl.push(x)});use=use.filter(x=>!outl.includes(x))}
+    let ml=null;
     const pens=[...new Set(use.map(x=>String(x.b.pen)))],byId=(a,b)=>a.b.id.localeCompare(b.b.id,"tr");
     let sel=[],res=[];
     if(o.mode==="uc"){
@@ -1144,12 +1176,19 @@ function computeSel(o){
       const sl=pickSpread(lo.filter(x=>!sh.includes(x)),loN,cap,o.spread);sl.forEach(x=>x.role="yavaş");sel=[...sh,...sl];
       const rh=hi.filter(x=>!sel.includes(x)),rl=lo.filter(x=>!sel.includes(x));
       for(let i=0;res.length<o.res&&(i<rh.length||i<rl.length);i++){if(rh[i]&&!res.includes(rh[i])&&res.length<o.res)res.push(Object.assign(rh[i],{role:"hızlı"}));if(rl[i]&&!res.includes(rl[i])&&res.length<o.res)res.push(Object.assign(rl[i],{role:"yavaş"}))}
+    }else if(o.mode==="ml"){
+      const X=use.map(x=>feats.map(k=>x.z[k])),bp=bestPam(X);
+      if(bp){const sizes=Array.from({length:bp.k},(_,c)=>bp.lab.filter(l=>l===c).length),big=sizes.indexOf(Math.max(...sizes)),mi=bp.med[big];
+        use.forEach((x,j)=>{x.cl=bp.lab[j]+1;x.dm=bp.D[mi][j]});
+        const mem=use.filter(x=>x.cl===big+1).sort((a,b)=>a.dm-b.dm||byId(a,b)),cap=Math.max(1,Math.ceil(o.n/Math.max(1,pens.length)));
+        sel=pickSpread(mem,o.n,cap,o.spread);res=mem.filter(x=>!sel.includes(x)).slice(0,o.res);[...sel,...res].forEach(x=>x.role="küme "+x.cl);
+        ml={k:bp.k,sil:bp.sil,sizes,big:big+1,medoid:use[mi].b.id};}
     }else{
       const ord=[...use].sort((a,b)=>a.d-b.d||byId(a,b)),cap=Math.max(1,Math.ceil(o.n/Math.max(1,pens.length)));
       sel=pickSpread(ord,o.n,cap,o.spread);res=ord.filter(x=>!sel.includes(x)).slice(0,o.res);
       [...sel,...res].forEach(x=>x.role="temsilî");
     }
-    out.push({g,mode:o.mode,all:all.length,use,ex,feats,pens,sel,res,med:{lw:median(use.map(x=>x.f.lw))}});
+    out.push({g,mode:o.mode,all:all.length,use,outl,ml,ex,feats,pens,sel,res,med:{lw:median(use.map(x=>x.f.lw))}});
   });
   return {opts:o,groups:out,last:days().slice(-1)[0]};
 }
@@ -1157,16 +1196,18 @@ function selMethodText(S){
   const o=S.opts,g0=S.groups[0],fe=(g0?.feats||["lw","MGR","ti"]).map(k=>SEL_FEATS[k]);
   const fl=fe.length>1?fe.slice(0,-1).join(", ")+" ve "+fe.slice(-1):fe[0];
   let t=`RNA-seq örnekleri, kesimden önce belirlenen bir kurala göre seçilmiştir. Her genotipte ${o.male?"erkek ":""}bireyler için ${fl} hesaplanmış; her özellik genotip içinde medyan ve ölçeklenmiş mutlak sapma medyanı (MAD × 1,4826) ile standartlaştırılmıştır. `;
-  t+=o.mode==="uc"?`Büyüme indeksi, standartlaştırılmış ${SEL_FEATS.lw} ile ${SEL_FEATS[fe.includes(SEL_FEATS.MGR)?"MGR":"adg"]} değerlerinin ortalaması olarak tanımlanmış; her genotipten indeksi en yüksek ${Math.ceil(o.n/2)} ve en düşük ${o.n-Math.ceil(o.n/2)} birey seçilmiştir. `:`Bireyin genotip büyüme profiline uzaklığı, standartlaştırılmış değerlerin kareler ortalamasının karekökü olarak hesaplanmış ve her genotipten bu uzaklığı en küçük ${o.n} birey seçilmiştir. `;
+  if(o.iso)t+=`Aykırı büyüme profilleri, makine öğrenmesi yöntemlerinden Isolation Forest (200 ağaç, alt örnek 64, sabit tohum) ile belirlenmiş ve anomali skoru ${fmt(o.isoCut,2)} ve üzerinde olan bireyler dışlanmıştır. `;
+  if(o.mode==="ml"){const m=S.groups.map(g=>g.ml?`${gname(g.g)} için k = ${g.ml.k}, ortalama siluet ${fmt(g.ml.sil,2)}`:null).filter(Boolean).join("; ");t+=`Bireyler standartlaştırılmış büyüme profillerine göre denetimsiz makine öğrenmesi yöntemi k-medoids (PAM; BUILD başlangıcı ve SWAP iyileştirmesi, Öklid uzaklığı) ile kümelenmiş; küme sayısı 2–6 arasında ortalama siluet katsayısını en büyük yapan değer olarak seçilmiştir${m?` (${m})`:""}. Her genotipte en kalabalık kümenin medoidi ve medoide en yakın üyeleri seçilerek ${o.n} birey belirlenmiştir. `}
+  else t+=o.mode==="uc"?`Büyüme indeksi, standartlaştırılmış ${SEL_FEATS.lw} ile ${SEL_FEATS[fe.includes(SEL_FEATS.MGR)?"MGR":"adg"]} değerlerinin ortalaması olarak tanımlanmış; her genotipten indeksi en yüksek ${Math.ceil(o.n/2)} ve en düşük ${o.n-Math.ceil(o.n/2)} birey seçilmiştir. `:`Bireyin genotip büyüme profiline uzaklığı, standartlaştırılmış değerlerin kareler ortalamasının karekökü olarak hesaplanmış ve her genotipten bu uzaklığı en küçük ${o.n} birey seçilmiştir. `;
   if(o.spread)t+=`Deney birimi kümes olduğundan seçimde aynı kümesten alınabilecek birey sayısı sınırlandırılmış, örnekler kümeslere dağıtılmıştır. `;
   if(o.myo)t+=`Beyaz çizgilenme (WS) veya odunsu göğüs (WB) skoru ${o.myoCut} ve üzerinde olan bireyler, göğüs miyopatisinin transkriptom üzerindeki baskın etkisi nedeniyle dışlanmıştır. `;
-  t+=`Her genotip için ${o.res} yedek birey aynı sıralamadan belirlenmiştir. Seçimde rastgelelik kullanılmamış, eşitlik durumunda birey kimliği sırası esas alınmıştır.`;
+  t+=`Her genotip için ${o.res} yedek birey aynı sıralamadan belirlenmiştir. ${o.iso?"Isolation Forest sabit tohumla çalıştırıldığından sonuçlar tekrarlanabilir; bunun dışında seçimde rastgelelik kullanılmamış":"Seçimde rastgelelik kullanılmamış"}, eşitlik durumunda birey kimliği sırası esas alınmıştır.`;
   return t;
 }
 function selChart(S){
   const mw=($("#main")?.clientWidth||680)-34,w=Math.max(300,Math.min(760,mw)),h=w<500?250:310,pad={l:52,r:14,t:26,b:36};
   const yk=S.groups[0]?.feats.includes("MGR")?"MGR":"adg",yl=yk==="MGR"?"Maks. büyüme hızı (g/gün)":"Ort. günlük artış (g/gün)";
-  const P=[];S.groups.forEach(gr=>gr.use.forEach(x=>P.push([x.f.lw,x.f[yk]])));if(!P.length)return "";
+  const P=[];S.groups.forEach(gr=>[...gr.use,...(gr.outl||[])].forEach(x=>P.push([x.f.lw,x.f[yk]])));if(!P.length)return "";
   let x0=Math.min(...P.map(p=>p[0])),x1=Math.max(...P.map(p=>p[0])),y0=Math.min(...P.map(p=>p[1])),y1=Math.max(...P.map(p=>p[1]));
   const xs=niceStep((x1-x0||1)/4),ys=niceStep((y1-y0||1)/4);x0=Math.floor(x0/xs)*xs;x1=Math.ceil(x1/xs)*xs;y0=Math.floor(y0/ys)*ys;y1=Math.ceil(y1/ys)*ys;
   const X=v=>pad.l+(v-x0)/(x1-x0||1)*(w-pad.l-pad.r),Y=v=>h-pad.b-(v-y0)/(y1-y0||1)*(h-pad.t-pad.b);
@@ -1175,18 +1216,19 @@ function selChart(S){
   s+=`<text x="${w-pad.r}" y="${h-2}" text-anchor="end" style="font-size:11px">Son tartım (${S.last}. gün, g)</text><text x="6" y="12" style="font-size:11px">${esc(yl)}</text></g>`;
   const fg=cssv("--fg");
   S.groups.forEach(gr=>{const c=cssv(gr.g==="AT"?"--at":gr.g==="RS"?"--rs":"--accent");
-    gr.use.forEach(x=>{if(!gr.sel.includes(x)&&!gr.res.includes(x))s+=`<circle cx="${X(x.f.lw).toFixed(1)}" cy="${Y(x.f[yk]).toFixed(1)}" r="2.6" fill="${c}" fill-opacity=".28"/>`});
+    gr.use.forEach(x=>{if(!gr.sel.includes(x)&&!gr.res.includes(x))s+=`<circle cx="${X(x.f.lw).toFixed(1)}" cy="${Y(x.f[yk]).toFixed(1)}" r="2.6" fill="${c}" fill-opacity="${gr.ml&&x.cl!==gr.ml.big?".12":".32"}"/>`});
+    (gr.outl||[]).forEach(x=>{const a=X(x.f.lw),b=Y(x.f[yk]);if(isFinite(a)&&isFinite(b))s+=`<path d="M${(a-3.5).toFixed(1)},${(b-3.5).toFixed(1)}l7,7m0,-7l-7,7" stroke="${cssv("--bad")}" stroke-width="1.6"/>`});
     gr.res.forEach(x=>s+=`<circle cx="${X(x.f.lw).toFixed(1)}" cy="${Y(x.f[yk]).toFixed(1)}" r="4.5" fill="none" stroke="${c}" stroke-width="1.6" stroke-dasharray="2 2"/>`);
     gr.sel.forEach(x=>s+=`<circle cx="${X(x.f.lw).toFixed(1)}" cy="${Y(x.f[yk]).toFixed(1)}" r="5" fill="${c}" stroke="${fg}" stroke-width="1.4"/>${gr.mode==="uc"?`<text x="${(X(x.f.lw)+7).toFixed(1)}" y="${(Y(x.f[yk])-6).toFixed(1)}" style="fill:${fg};font-size:10.5px;font-family:var(--mono)">${esc(x.b.id)}</text>`:""}`);
   });
   return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Aday bireylerin büyüme dağılımı ve seçilenler">${s}</svg>
-  <div class="legend"><span><i style="border-color:var(--fg);border-top-width:6px"></i>Seçilen</span><span><i style="border-color:var(--muted);border-top-style:dashed"></i>Yedek</span>${S.groups.map(gr=>`<span><i style="border-color:${cssv(gr.g==="AT"?"--at":gr.g==="RS"?"--rs":"--accent")}"></i>${esc(gname(gr.g))} adayları</span>`).join("")}</div>`;
+  <div class="legend"><span><i style="border-color:var(--fg);border-top-width:6px"></i>Seçilen</span><span><i style="border-color:var(--muted);border-top-style:dashed"></i>Yedek</span>${S.groups.some(g=>g.outl&&g.outl.length)?`<span style="color:var(--bad)">× Isolation Forest aykırı</span>`:""}${S.groups.some(g=>g.ml)?`<span>Soluk noktalar: seçilmeyen kümeler</span>`:""}${S.groups.map(gr=>`<span><i style="border-color:${cssv(gr.g==="AT"?"--at":gr.g==="RS"?"--rs":"--accent")}"></i>${esc(gname(gr.g))} adayları</span>`).join("")}</div>`;
 }
-function selTable(gr){
-  const yk=gr.feats.includes("MGR");const row=(x,st)=>`<tr class="click" data-open="${esc(x.b.id)}"><td>${st==="sel"?`<span class="pill ok">seçildi</span>`:`<span class="pill">yedek</span>`}${x.role&&x.role!=="temsilî"?` <span class="small muted">${esc(x.role)}</span>`:""}</td><td><span class="tag ${esc(gr.g)}">${esc(x.b.id)}</span></td><td>${esc(x.b.pen)}</td><td class="n">${fmt(x.f.lw)}</td><td class="n">${yk?fmt(x.f.MGR,1):fmt(x.f.adg,1)}</td>${yk?`<td class="n">${fmt(x.f.ti,1)}</td>`:""}<td class="n">${fmt(gr.mode==="uc"?x.idx:x.d,2)}</td><td class="n">${x.wb!=null||x.ws!=null?`${x.wb??"—"} / ${x.ws??"—"}`:`<span class="small muted">kesimde</span>`}</td><td>${x.b.rna?`<span class="pill warn">işaretli</span>`:""}</td></tr>`;
-  const e=gr.ex,exs=[[e.gone,"ölü/çıkarıldı"],[e.sex,"dişi"],[e.nosex,"cinsiyet girilmemiş"],[e.myo,"miyopati"],[e.nodata,"eksik tartım"]].filter(x=>x[0].length).map(x=>`${x[0].length} ${x[1]}`).join(", ");
-  return `<div class="stack" style="gap:6px"><h4 style="margin:0">${esc(gname(gr.g))} <span class="small muted">· ${gr.use.length} uygun aday / ${gr.all} birey · medyan ${fmt(gr.med.lw)} g${exs?` · dışlanan: ${esc(exs)}`:""}</span></h4>
-  ${gr.sel.length?`<div class="tablewrap"><table class="t"><thead><tr><th>Durum</th><th>Kimlik</th><th>Kümes</th><th class="n">Son tartım (g)</th><th class="n">${yk?"MGR (g/gün)":"Günlük artış (g)"}</th>${yk?`<th class="n">ti (gün)</th>`:""}<th class="n">${gr.mode==="uc"?"Büyüme indeksi":"Uzaklık"}</th><th class="n">WB / WS</th><th></th></tr></thead><tbody>${gr.sel.map(x=>row(x,"sel")).join("")}${gr.res.map(x=>row(x,"res")).join("")}</tbody></table></div>`:`<div class="empty">Bu genotipte seçilebilecek birey yok.${e.nosex.length?" Önce bireylerin cinsiyetini gir.":""}</div>`}</div>`;
+function selTable(gr,ref){
+  const yk=gr.feats.includes("MGR");const row=(x,st)=>`<tr class="click" data-open="${esc(x.b.id)}"><td>${st==="sel"?`<span class="pill ok">seçildi</span>`:`<span class="pill">yedek</span>`}${x.role&&x.role!=="temsilî"?` <span class="small muted">${esc(x.role)}</span>`:""}</td><td><span class="tag ${esc(gr.g)}">${esc(x.b.id)}</span></td><td>${esc(x.b.pen)}</td><td class="n">${fmt(x.f.lw)}</td><td class="n">${yk?fmt(x.f.MGR,1):fmt(x.f.adg,1)}</td>${yk?`<td class="n">${fmt(x.f.ti,1)}</td>`:""}<td class="n">${fmt(gr.mode==="uc"?x.idx:gr.mode==="ml"?x.dm:x.d,2)}</td>${x.iso!=null?`<td class="n">${fmt(x.iso,2)}</td>`:"<td></td>"}<td class="n">${x.wb!=null||x.ws!=null?`${x.wb??"—"} / ${x.ws??"—"}`:`<span class="small muted">kesimde</span>`}</td><td>${x.b.rna?`<span class="pill warn">işaretli</span>`:""}</td></tr>`;
+  const e=gr.ex,exs=[[e.gone,"ölü/çıkarıldı"],[e.sex,"dişi"],[e.nosex,"cinsiyet girilmemiş"],[e.myo,"miyopati"],[e.nodata,"eksik tartım"],[e.out,"aykırı (IF)"]].filter(x=>x[0].length).map(x=>`${x[0].length} ${x[1]}`).join(", ");
+  return `<div class="stack" style="gap:6px"><h4 style="margin:0">${esc(gname(gr.g))} <span class="small muted">· ${gr.use.length} uygun aday / ${gr.all} birey · medyan ${fmt(gr.med.lw)} g${exs?` · dışlanan: ${esc(exs)}`:""}</span></h4>${gr.ml?`<p class="small" style="margin:0"><span class="pill ok">k-medoids</span> k = ${gr.ml.k} · siluet ${fmt(gr.ml.sil,2)} · küme büyüklükleri ${gr.ml.sizes.join(" / ")} · seçilen küme ${gr.ml.big} (medoid <span class="mono">${esc(gr.ml.medoid)}</span>)${ref?(()=>{const t=new Set(ref.sel.map(x=>x.b.id)),c=gr.sel.filter(x=>t.has(x.b.id)).map(x=>x.b.id);return ` · kural tabanlı (temsilî) seçimle ortak: ${c.length}/${gr.sel.length}${c.length?` (${c.map(esc).join(", ")})`:""}`})():""}</p>`:gr.mode==="ml"?`<p class="small muted" style="margin:0">Kümeleme için en az 10 uygun aday gerekir.</p>`:""}
+  ${gr.sel.length?`<div class="tablewrap"><table class="t"><thead><tr><th>Durum</th><th>Kimlik</th><th>Kümes</th><th class="n">Son tartım (g)</th><th class="n">${yk?"MGR (g/gün)":"Günlük artış (g)"}</th>${yk?`<th class="n">ti (gün)</th>`:""}<th class="n">${gr.mode==="uc"?"Büyüme indeksi":gr.mode==="ml"?"Medoide uzaklık":"Uzaklık"}</th><th class="n">IF skoru</th><th class="n">WB / WS</th><th></th></tr></thead><tbody>${gr.sel.map(x=>row(x,"sel")).join("")}${gr.res.map(x=>row(x,"res")).join("")}</tbody></table></div>`:`<div class="empty">Bu genotipte seçilebilecek birey yok.${e.nosex.length?" Önce bireylerin cinsiyetini gir.":""}</div>`}</div>`;
 }
 function selSaved(){const s=ST.rna?.sel;return s&&s.ids?s:null}
 function selBody(){
@@ -1195,23 +1237,24 @@ function selBody(){
   return `<div class="fgrid">
       <label class="f"><span>Genotip başına birey</span><input class="i" id="so_n" type="number" min="1" max="20" value="${o.n}"></label>
       <label class="f"><span>Yedek</span><input class="i" id="so_res" type="number" min="0" max="10" value="${o.res}"></label>
-      <label class="f" style="grid-column:span 2"><span>Seçim yöntemi</span><select class="i" id="so_mode"><option value="temsili" ${o.mode!=="uc"?"selected":""}>Temsilî (genotip medyanına en yakın)</option><option value="uc" ${o.mode==="uc"?"selected":""}>Uç fenotip (en hızlı ve en yavaş)</option></select></label>
+      <label class="f" style="grid-column:span 2"><span>Seçim yöntemi</span><select class="i" id="so_mode"><option value="temsili" ${o.mode!=="uc"?"selected":""}>Temsilî (genotip medyanına en yakın)</option><option value="uc" ${o.mode==="uc"?"selected":""}>Uç fenotip (en hızlı ve en yavaş)</option><option value="ml" ${o.mode==="ml"?"selected":""}>Makine öğrenmesi (k-medoids)</option></select></label>
     </div>
     <div class="row small" style="gap:16px;flex-wrap:wrap">
       <label class="row"><input type="checkbox" id="so_male" ${o.male?"checked":""}> Yalnız erkekler</label>
       <label class="row"><input type="checkbox" id="so_spread" ${o.spread?"checked":""}> Kümeslere dağıt</label>
       <label class="row"><input type="checkbox" id="so_myo" ${o.myo?"checked":""}> WB veya WS ≥ <input class="i" id="so_cut" type="number" min="0.5" max="3" step="0.5" value="${o.myoCut}" style="width:64px;padding:4px 6px"> olanları dışla</label>
+      <label class="row"><input type="checkbox" id="so_iso" ${o.iso?"checked":""}> Aykırıları dışla (Isolation Forest, skor ≥ <input class="i" id="so_isocut" type="number" min="0.5" max="0.8" step="0.01" value="${o.isoCut}" style="width:72px;padding:4px 6px">)</label>
     </div>
     ${selChart(S)}
-    ${S.groups.map(selTable).join("")}
+    ${(()=>{const T=o.mode==="ml"?computeSel({...o,mode:"temsili"}):null;return S.groups.map((g,i)=>selTable(g,T?T.groups[i]:null)).join("")})()}
     <details class="sec"><summary>Yöntem metni (tez için)</summary><div class="body stack"><p id="selTxt" style="margin:0;line-height:1.55">${esc(selMethodText(S))}</p><div class="row"><button class="btn" id="selCopy" type="button">Metni kopyala</button></div></div></details>
     ${sv?`<p class="small" style="margin:0">${same?`<span class="pill ok">Kayıtlı seçimle aynı</span>`:`<span class="pill warn">Kayıtlı seçimden farklı</span>`} Kayıtlı seçim: ${esc(trDate(sv.at?.slice(0,10)))} · ${sv.ids.map(i=>`<span class="mono">${esc(i)}</span>`).join(", ")}</p>`:""}
     <div class="row"><button class="btn primary" id="selSave" type="button" ${cur.length?"":"disabled"}>Seçimi kaydet ve işaretle</button><span class="small muted">Seçilenler RNA-seq bireyi olarak işaretlenir; kural ve tarih kaydedilir.</span></div>`;
 }
 function bindSel(){
   const box=$("#selBody");if(!box)return;
-  const upd=()=>{ST.selOpts={n:Math.max(1,Math.min(20,parseInt(val("so_n"))||4)),res:Math.max(0,Math.min(10,parseInt(val("so_res"))||0)),mode:val("so_mode"),male:$("#so_male").checked,spread:$("#so_spread").checked,myo:$("#so_myo").checked,myoCut:num(val("so_cut"))??2};box.innerHTML=selBody();bindSel()};
-  ["so_n","so_res","so_mode","so_male","so_spread","so_myo","so_cut"].forEach(i=>{const e=$("#"+i);if(e)e.onchange=upd});
+  const upd=()=>{ST.selOpts={n:Math.max(1,Math.min(20,parseInt(val("so_n"))||4)),res:Math.max(0,Math.min(10,parseInt(val("so_res"))||0)),mode:val("so_mode"),male:$("#so_male").checked,spread:$("#so_spread").checked,myo:$("#so_myo").checked,myoCut:num(val("so_cut"))??2,iso:$("#so_iso").checked,isoCut:num(val("so_isocut"))??0.6};box.innerHTML=selBody();bindSel()};
+  ["so_n","so_res","so_mode","so_male","so_spread","so_myo","so_cut","so_iso","so_isocut"].forEach(i=>{const e=$("#"+i);if(e)e.onchange=upd});
   box.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open,"rna"));
   $("#selCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("#selTxt").textContent);toast("Yöntem metni kopyalandı")}catch(e){toast("Kopyalanamadı; metni seçip kopyala")}};
   $("#selSave").onclick=()=>{
@@ -1219,7 +1262,7 @@ function bindSel(){
     dlg(`<h3>Seçim kaydedilsin mi?</h3><p>${S.groups.map(g=>`<b>${esc(gname(g.g))}:</b> ${g.sel.map(x=>esc(x.b.id)).join(", ")||"—"}`).join("<br>")}</p>${old.length?`<p class="small">Önceden işaretli olup bu seçimde olmayan ${old.length} bireyin işareti kaldırılacak: ${old.map(b=>esc(b.id)).join(", ")}</p>`:""}<p class="small muted">Kural, tarih ve yedekler de kaydedilir.</p>`,async()=>{
       for(const b of old)await Store.patch("birds/"+b.id,{rna:false});
       for(const id of ids)if(!ST.birds[id]?.rna)await Store.patch("birds/"+id,{rna:true});
-      await Store.patch("rna/deg",{sel:{at:new Date().toISOString(),opts:S.opts,ids,res,feats:S.groups[0]?.feats||[],text:selMethodText(S),rows:S.groups.flatMap(g=>[...g.sel.map(x=>[x,"seçildi"]),...g.res.map(x=>[x,"yedek"])].map(([x,st])=>({id:x.b.id,g:g.g,pen:x.b.pen,st,role:x.role,lw:x.f.lw,MGR:x.f.MGR,ti:x.f.ti,adg:x.f.adg,d:x.d,idx:x.idx})))}});
+      await Store.patch("rna/deg",{sel:{at:new Date().toISOString(),opts:S.opts,ids,res,feats:S.groups[0]?.feats||[],text:selMethodText(S),rows:S.groups.flatMap(g=>[...g.sel.map(x=>[x,"seçildi"]),...g.res.map(x=>[x,"yedek"])].map(([x,st])=>({id:x.b.id,g:g.g,pen:x.b.pen,st,role:x.role,lw:x.f.lw,MGR:x.f.MGR,ti:x.f.ti,adg:x.f.adg,d:x.d,idx:x.idx,cl:x.cl,dm:x.dm,iso:x.iso})))}});
       toast("Seçim kaydedildi");render();
     },"Kaydet");
   };
@@ -1415,7 +1458,7 @@ async function exportXLSX(){
   add("Kesim",birdList().filter(b=>b.slaughter).map(b=>{const c=sCalc(b.slaughter);const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Kesim tarihi":trDate(b.slaughter.date)};FL("slaughter").forEach(m=>r[flabel(m)]=ftype(m)==="text"?(b.slaughter[m.k]||""):num(b.slaughter[m.k]));Object.assign(r,{"Karkas randımanı (%)":c.yield,"Göğüs eti / karkas (%)":c.breast,"But / karkas (%)":c.thigh,"Abdominal yağ / canlı ağırlık (%)":c.fat});return r}));
   add("Et kalitesi",birdList().filter(b=>b.meat).map(b=>{const c=mCalc(b.meat);const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||""};FL("meat").forEach(f=>r[(f.g?f.g+": ":"")+flabel(f)]=ftype(f)==="text"?(b.meat[f.k]||""):num(b.meat[f.k]));r["Drip loss (%)"]=c.drip;r["Cooking loss (%)"]=c.cook;return r}));
   add("RNA-seq",birdList().filter(b=>b.rna||b.rnaseq).map(b=>{const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Seçildi":b.rna?"evet":""};FL("rna").forEach(f=>r[flabel(f)]=ftype(f)==="text"?(b.rnaseq?.[f.k]||""):num(b.rnaseq?.[f.k]));return r}));
-  {const sv=selSaved();add("RNA-seq seçimi",sv?[...sv.rows.map(r=>({"Kimlik":r.id,"Genotip":gname(r.g),"Kümes":r.pen,"Durum":r.st,"Rol":r.role||"","Son tartım (g)":r.lw,"MGR (g/gün)":r.MGR,"ti (gün)":r.ti,"Günlük artış (g)":r.adg,"Profil uzaklığı":r.d,"Büyüme indeksi":r.idx})),{},{"Kimlik":"Kayıt tarihi","Genotip":trDate(sv.at.slice(0,10))},{"Kimlik":"Yöntem","Genotip":sv.text}]:[])}
+  {const sv=selSaved();add("RNA-seq seçimi",sv?[...sv.rows.map(r=>({"Kimlik":r.id,"Genotip":gname(r.g),"Kümes":r.pen,"Durum":r.st,"Rol":r.role||"","Son tartım (g)":r.lw,"MGR (g/gün)":r.MGR,"ti (gün)":r.ti,"Günlük artış (g)":r.adg,"Profil uzaklığı":r.d,"Büyüme indeksi":r.idx,"Küme (k-medoids)":r.cl??"","Medoide uzaklık":r.dm??"","Isolation Forest skoru":r.iso??""})),{},{"Kimlik":"Kayıt tarihi","Genotip":trDate(sv.at.slice(0,10))},{"Kimlik":"Yöntem","Genotip":sv.text}]:[])}
   add("Gompertz",birdList().map(b=>{const f=birdGomp(b);return f?{"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","A (g)":f.A,"k (1/gün)":f.k,"ti (gün)":f.ti,"Wi (g)":f.Wi,"Maks. büyüme hızı (g/gün)":f.MGR,"R²":f.r2,"Tartım sayısı":f.n}:null}).filter(Boolean));
   const ap=areaPairs(null);add("Görüntü-ağırlık",ap.map(p=>({"Kimlik":p.b,"Genotip":gname(p.g),"Gün":p.d,"Alan (cm²)":p.a,"Canlı ağırlık (g)":p.y,"Tahmin (g)":predictW(p.g,p.a)})));
   const buf=X.write(wb,{type:"array",bookType:"xlsx"});
@@ -1505,6 +1548,42 @@ function segmentBird(canvas){
   x.putImageData(img,0,0);
   return {px:comps[bi].n/(s*s),share:comps[bi].n/N,preview:c.toDataURL("image/jpeg",0.7),longSide:Math.max(W,H)};
 }
+/* ============ Derin öğrenme: DeepLab v3 ile birey segmentasyonu ============
+   Model: DeepLab v3 (PASCAL VOC, 21 sınıf), MediaPipe Image Segmenter ile tarayıcıda çalışır; fotoğraf telefondan çıkmaz.
+   Hayvan sınıflarının (kuş, kedi, inek, köpek, at, koyun) birleşimi birey maskesi kabul edilir; üstten çekilen civcivleri model bazen başka hayvan sınıfına koyar. */
+const DLM={lib:"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs",wasm:"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",model:"https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite",animals:new Set([3,8,10,12,13,17]),seg:null,busy:null,failed:null};
+async function dlSegmenter(){
+  if(DLM.seg)return DLM.seg;if(DLM.busy)return DLM.busy;
+  DLM.busy=(async()=>{const m=await import(DLM.lib);const fs=await m.FilesetResolver.forVisionTasks(DLM.wasm);
+    DLM.seg=await m.ImageSegmenter.createFromOptions(fs,{baseOptions:{modelAssetPath:DLM.model,delegate:"CPU"},runningMode:"IMAGE",outputCategoryMask:true,outputConfidenceMasks:false});return DLM.seg})();
+  try{return await DLM.busy}catch(e){DLM.busy=null;DLM.failed=e.message||String(e);throw e}
+}
+async function segmentBirdDL(canvas){
+  const W=canvas.width,H=canvas.height,s=Math.min(1,512/Math.max(W,H)),w=Math.round(W*s),h=Math.round(H*s),N=w*h;
+  const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(canvas,0,0,w,h);
+  const seg=await dlSegmenter();const r=seg.segment(c);const mk=r.categoryMask;const raw=mk.getAsUint8Array();const mw=mk.width,mh=mk.height;
+  const cls=new Uint8Array(N);for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++)cls[yy*w+xx]=raw[Math.min(mh-1,Math.floor(yy*mh/h))*mw+Math.min(mw-1,Math.floor(xx*mw/w))];
+  mk.close();
+  const fg=i=>DLM.animals.has(cls[i]);
+  const lab=new Int32Array(N).fill(-1),q=new Int32Array(N),comps=[];
+  for(let i=0;i<N;i++){if(!fg(i)||lab[i]!==-1)continue;let qh=0,qt=0,n=0,edge=0,sx=0,sy=0,bird=0;q[qt++]=i;lab[i]=comps.length;
+    while(qh<qt){const p=q[qh++],px=p%w,py=(p/w)|0;n++;sx+=px;sy+=py;if(cls[p]===3)bird++;if(px===0||py===0||px===w-1||py===h-1)edge++;
+      for(const nb of [px>0?p-1:-1,px<w-1?p+1:-1,py>0?p-w:-1,py<h-1?p+w:-1])if(nb>=0&&lab[nb]===-1&&fg(nb)){lab[nb]=comps.length;q[qt++]=nb}}
+    comps.push({n,edge,bird,cx:sx/n/w,cy:sy/n/h})}
+  let bi=-1,bs=-1;comps.forEach((k,i)=>{if(k.n<N*0.003)return;const cen=1-Math.min(1,Math.hypot(k.cx-.5,k.cy-.5)*1.6);const sc=k.n*(k.edge>k.n*0.05?0.3:1)*(0.5+cen);if(sc>bs){bs=sc;bi=i}});
+  if(bi<0)return null;
+  const img=x.getImageData(0,0,w,h),d=img.data;
+  for(let i=0;i<N;i++){const o=i*4;if(lab[i]===bi){d[o]=Math.min(255,d[o]*0.4+150);d[o+1]=d[o+1]*0.5;d[o+2]=d[o+2]*0.4}else{d[o]*=0.3;d[o+1]*=0.3;d[o+2]*=0.3}}
+  x.putImageData(img,0,0);
+  return {px:comps[bi].n/(s*s),share:comps[bi].n/N,preview:c.toDataURL("image/jpeg",0.7),longSide:Math.max(W,H),method:"dl",birdShare:comps[bi].bird/comps[bi].n};
+}
+/* Ayarlardaki yönteme göre; derin öğrenme yüklenemez ya da bireyi bulamazsa klasik yönteme düşer */
+async function segmentAuto(canvas){
+  if((ST.config.segMethod||"dl")==="dl"){try{const r=await segmentBirdDL(canvas);if(r)return r}catch(e){console.warn("DeepLab kullanılamadı:",e)}}
+  const r=segmentBird(canvas);if(r)r.method="otsu";return r;
+}
+const segName=m=>m==="dl"?"derin öğrenme (DeepLab v3)":m==="otsu"?"klasik (Otsu eşikleme)":"";
+
 function areaCm2(seg){const c=ST.config.calib;if(!seg||!c||!num(c.pxPerCm))return null;const ppc=num(c.pxPerCm)*seg.longSide/(num(c.longSide)||1600);return seg.px/(ppc*ppc)}
 function areaPairs(g){const o=[];birdList().forEach(b=>{if(g&&b.geno!==g)return;days().forEach(d=>{const w=b.weeks?.["d"+d];const a=num(w?.area),y=num(w?.w);if(a>0&&y>0)o.push({a,y,b:b.id,d,g:b.geno})})});return o}
 function fitLog(pairs){if(pairs.length<3)return null;const X=pairs.map(p=>Math.log(p.a)),Y=pairs.map(p=>Math.log(p.y)),mx=mean(X),my=mean(Y);let sxy=0,sxx=0;X.forEach((x,i)=>{sxy+=(x-mx)*(Y[i]-my);sxx+=(x-mx)**2});if(!sxx)return null;const b=sxy/sxx;return {a:my-b*mx,b}}
@@ -1539,7 +1618,7 @@ async function recomputeAreas(){
   const byBird={};
   for(const [b,d,ref] of jobs){
     toast(`Alanlar hesaplanıyor ${done+fail+1}/${jobs.length}`,8000);
-    try{const seg=segmentBird(await imageCanvas(photoSrc(ref)));const a=areaCm2(seg);if(a){(byBird[b.id]=byBird[b.id]||{})["d"+d]={area:Math.round(a*10)/10,areaPx:Math.round(seg.px)};done++}else fail++}catch(e){fail++}
+    try{const seg=await segmentAuto(await imageCanvas(photoSrc(ref)));const a=areaCm2(seg);if(a){(byBird[b.id]=byBird[b.id]||{})["d"+d]={area:Math.round(a*10)/10,areaPx:Math.round(seg.px),segm:seg.method};done++}else fail++}catch(e){fail++}
   }
   for(const [id,weeks] of Object.entries(byBird))await Store.patch("birds/"+id,{weeks});
   toast(`${done} fotoğrafın alanı hesaplandı${fail?`, ${fail} fotoğraf okunamadı`:""}`,5000);render();
@@ -1584,7 +1663,9 @@ function viewAnaliz(){
       <p class="ref">Tartımlar 42. günde bittiği için A ve ti eğrinin dışına uzatılarak tahmin edilir; genotipleri karşılaştırırken k, ti ve maksimum büyüme hızını öne çıkar. Birey parametreleri Excel'deki "Gompertz" sayfasında, istatistik testi için hazır.</p>
     </div>
     <div class="card stack"><h3>Fotoğraftan ağırlık tahmini</h3>
-      <p class="small muted">Üstten fotoğrafta bireyin kapladığı alan (cm²) ölçülür ve ln(ağırlık) = a + b · ln(alan) modeli genotip başına kurulur (Küçüktopçu ve ark. 2025). Fotoğraflar hep aynı yükseklikten, tek renk zeminde çekilmelidir.</p>
+      <p class="small muted">Üstten fotoğrafta bireyin kapladığı alan (cm²) ölçülür ve ln(ağırlık) = a + b · ln(alan) modeli genotip başına kurulur (Küçüktopçu ve ark. 2025). Fotoğraflar hep aynı yükseklikten çekilmelidir.</p>
+      <div class="row" style="align-items:flex-end;gap:12px"><label class="f" style="min-width:260px"><span>Bireyi fotoğraftan ayırma yöntemi</span><select class="i" id="segM" ${ST.canWrite?"":"disabled"}><option value="dl" ${(ST.config.segMethod||"dl")==="dl"?"selected":""}>Derin öğrenme (DeepLab v3)</option><option value="otsu" ${ST.config.segMethod==="otsu"?"selected":""}>Klasik (Otsu eşikleme)</option></select></label>
+        <span class="small muted" style="flex:1;min-width:220px">${(()=>{const c={dl:0,otsu:0};birdList().forEach(b=>Object.values(b.weeks||{}).forEach(w=>{if(w.segm)c[w.segm]=(c[w.segm]||0)+1}));return c.dl||c.otsu?`Ölçülmüş fotoğraflar: ${c.dl} derin öğrenme, ${c.otsu} klasik.`:"DeepLab v3, piksel düzeyinde nesne ayıran bir evrişimli sinir ağıdır; telefonda çalışır, fotoğraf dışarı gönderilmez."})()}</span></div>
       <div class="row"><span class="pill ${cal?.pxPerCm?"ok":"warn"}">${cal?.pxPerCm?`Kalibrasyon: ${fmt(num(cal.pxPerCm),1)} piksel/cm · ${esc(trDate(cal.date))}`:"Kalibrasyon yapılmadı"}</span>
         <button class="btn" id="calBtn">Kalibrasyon fotoğrafı çek</button><button class="btn" id="recBtn" ${cal?.pxPerCm?"":"disabled"}>Kayıtlı fotoğraflardan alanı hesapla</button></div>
       <p class="ref">Kalibrasyon: telefon tutucuyu ayarladıktan sonra kabın içine cetvel ya da 5 × 5 cm kare koyup bir fotoğraf çek ve iki noktaya dokun. Telefonun yüksekliği değişirse kalibrasyonu yenile.</p>
@@ -1596,7 +1677,7 @@ function viewAnaliz(){
     </div>
   </section>`;
 }
-BIND.analiz=()=>{$("#calBtn").onclick=calibDlg;$("#recBtn").onclick=recomputeAreas};
+BIND.analiz=()=>{$("#calBtn").onclick=calibDlg;$("#recBtn").onclick=recomputeAreas;const sm=$("#segM");if(sm)sm.onchange=async()=>{if(await Store.patch("config/main",{segMethod:sm.value}))toast(sm.value==="dl"?"Derin öğrenme seçildi; alanları yeniden hesaplayabilirsin":"Klasik yöntem seçildi")}};
 
 /* ============ ÇİZİMLER ============ */
 function heroSVG(cls="hero",h=210){
