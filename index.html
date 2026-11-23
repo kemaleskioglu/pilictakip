@@ -1035,11 +1035,14 @@ function viewRna(){
   const rb=birdList().filter(b=>b.rna),gs=Object.keys(G());
   return `<section class="stack">
     <h2>RNA-seq</h2>
-    <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Örnek bireyler <span class="muted small">${rb.length}</span></h3><button class="btn" id="suggest">Seçim kuralına göre öner</button></div>
-      <p class="small muted">Kural: her genotipten 4 erkek; kesim ağırlığı grup medyanına en yakın; mümkünse farklı kümeslerden. Kuralı önceden belirlemek örnek seçimini hakeme karşı savunulur kılar.</p>
+    <div class="card stack"><h3>Örnek seçimi</h3>
+      <p class="small muted" style="margin:0">Sıralanacak bireyler, tartım ve fotoğraf verisinden çıkan büyüme profiline göre önceden belirlenen kuralla seçilir. Kural ve sonuç kaydedilir; aynı veriyle her zaman aynı bireyler çıkar.</p>
+      <div class="stack" id="selBody">${selBody()}</div>
+    </div>
+    <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Örnek bireyler <span class="muted small">${rb.length}</span></h3></div>
       ${rb.length?`<div class="tablewrap"><table class="t"><thead><tr><th>Kimlik</th><th>Kümes</th><th>Örnek kodu</th><th class="n">Kesim (g)</th><th class="n">RNA (ng/µL)</th><th class="n">A260/280</th><th class="n">A260/230</th><th class="n">RIN</th><th class="n">Okuma (milyon)</th><th class="n">Hizalanma (%)</th><th>SRA</th></tr></thead><tbody>
       ${rb.map(b=>{const r=b.rnaseq||{};const low=num(r.rin)!=null&&num(r.rin)<7;return `<tr class="click" data-open="${esc(b.id)}"><td><span class="tag ${esc(b.geno)}">${esc(b.id)}</span></td><td>${esc(b.pen)}</td><td class="mono">${esc(r.code||"")}</td><td class="n">${fmt(num(b.slaughter?.fastedW)??wOf(b,days().slice(-1)[0]))}</td><td class="n">${esc(r.conc||"")}</td><td class="n">${esc(r.r280||"")}</td><td class="n">${esc(r.r230||"")}</td><td class="n">${low?`<span class="pill bad">${esc(r.rin)}</span>`:esc(r.rin||"")}</td><td class="n">${esc(r.clean||r.raw||"")}</td><td class="n">${esc(r.map||"")}</td><td class="mono">${esc(r.sra||"")}</td></tr>`}).join("")}
-      </tbody></table></div><p class="ref">RIN 7'nin altı kırmızı işaretlenir.</p>`:`<div class="empty">Henüz RNA-seq bireyi işaretlenmedi. Birey kartındaki RNA-seq bölümünden ya da "öner" ile seç.</div>`}
+      </tbody></table></div><p class="ref">RIN 7'nin altı kırmızı işaretlenir.</p>`:`<div class="empty">Henüz RNA-seq bireyi işaretlenmedi. Yukarıdaki örnek seçimiyle ya da birey kartındaki RNA-seq bölümünden seç.</div>`}
     </div>
     <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Farklı ifade edilen genler (DESeq2)</h3><button class="btn" id="degUp">CSV yükle</button></div>
       <p class="small muted">DESeq2 <span class="mono">results()</span> tablosunu CSV olarak yükle (sütunlar: gen adı, <span class="mono">log2FoldChange</span>, <span class="mono">padj</span>). Eşik: FDR &lt; 0,05 ve |log2FC| ≥ 1.</p>
@@ -1085,7 +1088,7 @@ function degHTML(d){
 }
 BIND.rna=()=>{
   document.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open,"rna"));
-  $("#suggest").onclick=suggestRna;
+  bindSel();
   $("#degUp").onclick=async()=>{
     const f=await pickFile("#fileAny",".csv,.tsv,.txt,text/csv");if(!f)return;const t=await f.text();const d=degFromText(t);if(d.error){toast(d.error);return}
     DEG=d;$("#degBox").innerHTML=degHTML(d);
@@ -1097,19 +1100,129 @@ BIND.rna=()=>{
   if(DEG)$("#degBox").innerHTML=degHTML(DEG)+`<p class="ref">${esc(ST.rna.file||"")}</p>`;
   else if(ST.rna?.asset){const a=ST.rna.asset;(a.startsWith("local:")?IDB.get(a):fetch(photoSrc(a)).then(r=>r.ok?r.text():null)).then(t=>{if(!t)return;DEG=degFromText(t);const b=$("#degBox");if(b)b.innerHTML=degHTML(DEG)+`<p class="ref">${esc(ST.rna.file||"")}</p>`}).catch(()=>{})}
 };
-function suggestRna(){
-  const gs=Object.keys(G()),last=days().slice(-1)[0],pick=[];
-  gs.forEach(g=>{
-    const pool=birdList().filter(b=>b.geno===g&&b.sex==="erkek"&&b.status!=="öldü").map(b=>({b,w:num(b.slaughter?.fastedW)??wOf(b,last)})).filter(x=>x.w!=null);
-    const md=median(pool.map(x=>x.w));pool.sort((a,b)=>Math.abs(a.w-md)-Math.abs(b.w-md));
-    const used=new Set(),sel=[];
-    for(const x of pool){if(sel.length>=4)break;if(!used.has(x.b.pen)){sel.push(x);used.add(x.b.pen)}}
-    for(const x of pool){if(sel.length>=4)break;if(!sel.includes(x))sel.push(x)}
-    pick.push({g,md,sel});
+/* ============ RNA-seq örnek seçimi ============
+   Kural kesimden önce belirlenir. Aynı veriyle her zaman aynı bireyleri verir (rastgelelik yok; eşitlikte kimlik sırası).
+   Özellikler genotip içinde medyan ve MAD ile standartlaştırılır (aykırı bireyler ölçeği bozmasın diye). */
+const SEL_DEF={n:4,res:2,mode:"temsili",male:true,spread:true,myo:true,myoCut:2};
+const SEL_FEATS={lw:"son tartım ağırlığı",MGR:"Gompertz maksimum büyüme hızı",ti:"büküm noktası yaşı",adg:"ortalama günlük artış"};
+function selOpts(){return Object.assign({},SEL_DEF,ST.rna?.sel?.opts||{},ST.selOpts||{})}
+function rnaFeat(b){
+  const ds=days(),last=ds[ds.length-1],pts=birdPts(b),lw=wOf(b,last),f=birdGomp(b),ok=f&&!f.edge&&f.r2!=null&&f.r2>0.9;
+  const adg=pts.length>=2&&lw!=null?(lw-pts[0][1])/(last-pts[0][0]):null;
+  return {lw,adg,MGR:ok?f.MGR:null,ti:ok?f.ti:null,A:ok?f.A:null,k:ok?f.k:null,n:pts.length,last};
+}
+function robustZ(vals){const md=median(vals);const mad=median(vals.map(v=>Math.abs(v-md)))*1.4826;const s=mad>0?mad:(sd(vals)||1);return v=>(v-md)/s}
+function pickSpread(list,k,cap,spread){
+  const sel=[],cnt={};
+  if(spread)for(const x of list){if(sel.length>=k)break;const p=String(x.b.pen);if((cnt[p]||0)<cap){sel.push(x);cnt[p]=(cnt[p]||0)+1}}
+  for(const x of list){if(sel.length>=k)break;if(!sel.includes(x))sel.push(x)}
+  return sel;
+}
+function computeSel(o){
+  o=o||selOpts();const out=[];
+  Object.keys(G()).forEach(g=>{
+    const all=birdList().filter(b=>b.geno===g),ex={gone:[],sex:[],nosex:[],nodata:[],myo:[]},pool=[];
+    all.forEach(b=>{
+      if(b.status==="öldü"||b.status==="çıkarıldı")return ex.gone.push(b);
+      if(o.male&&b.sex!=="erkek")return (b.sex?ex.sex:ex.nosex).push(b);
+      const m=b.meat||{},wb=num(m.wb),ws=num(m.ws);
+      if(o.myo&&((wb!=null&&wb>=o.myoCut)||(ws!=null&&ws>=o.myoCut)))return ex.myo.push(b);
+      const f=rnaFeat(b);if(f.lw==null)return ex.nodata.push(b);
+      pool.push({b,f,wb,ws});
+    });
+    const gompN=pool.filter(x=>x.f.MGR!=null).length;
+    const feats=pool.length&&gompN>=0.8*pool.length?["lw","MGR","ti"]:["lw","adg"];
+    const use=pool.filter(x=>feats.every(k=>x.f[k]!=null));pool.filter(x=>!use.includes(x)).forEach(x=>ex.nodata.push(x.b));
+    const Z={};feats.forEach(k=>Z[k]=robustZ(use.map(x=>x.f[k])));
+    use.forEach(x=>{x.z={};feats.forEach(k=>x.z[k]=Z[k](x.f[k]));x.d=Math.sqrt(feats.reduce((s,k)=>s+x.z[k]**2,0)/feats.length);x.idx=(x.z.lw+(x.z.MGR??x.z.adg))/2});
+    const pens=[...new Set(use.map(x=>String(x.b.pen)))],byId=(a,b)=>a.b.id.localeCompare(b.b.id,"tr");
+    let sel=[],res=[];
+    if(o.mode==="uc"){
+      const hiN=Math.ceil(o.n/2),loN=o.n-hiN,cap=Math.max(1,Math.ceil(hiN/Math.max(1,pens.length)));
+      const hi=[...use].sort((a,b)=>b.idx-a.idx||byId(a,b)),lo=[...use].sort((a,b)=>a.idx-b.idx||byId(a,b));
+      const sh=pickSpread(hi,hiN,cap,o.spread);sh.forEach(x=>x.role="hızlı");
+      const sl=pickSpread(lo.filter(x=>!sh.includes(x)),loN,cap,o.spread);sl.forEach(x=>x.role="yavaş");sel=[...sh,...sl];
+      const rh=hi.filter(x=>!sel.includes(x)),rl=lo.filter(x=>!sel.includes(x));
+      for(let i=0;res.length<o.res&&(i<rh.length||i<rl.length);i++){if(rh[i]&&!res.includes(rh[i])&&res.length<o.res)res.push(Object.assign(rh[i],{role:"hızlı"}));if(rl[i]&&!res.includes(rl[i])&&res.length<o.res)res.push(Object.assign(rl[i],{role:"yavaş"}))}
+    }else{
+      const ord=[...use].sort((a,b)=>a.d-b.d||byId(a,b)),cap=Math.max(1,Math.ceil(o.n/Math.max(1,pens.length)));
+      sel=pickSpread(ord,o.n,cap,o.spread);res=ord.filter(x=>!sel.includes(x)).slice(0,o.res);
+      [...sel,...res].forEach(x=>x.role="temsilî");
+    }
+    out.push({g,mode:o.mode,all:all.length,use,ex,feats,pens,sel,res,med:{lw:median(use.map(x=>x.f.lw))}});
   });
-  const any=pick.some(p=>p.sel.length);
-  dlg(`<h3>Önerilen RNA-seq bireyleri</h3>${any?pick.map(p=>`<p><b>${esc(gname(p.g))}</b>, medyan ${fmt(p.md)} g<br>${p.sel.map(x=>`<span class="tag ${esc(p.g)}">${esc(x.b.id)}${pk(x.b)}</span> <span class="small muted">${fmt(x.w)} g · Kümes ${esc(x.b.pen)}</span>`).join("<br>")}</p>`).join(""):`<p class="muted">Cinsiyeti "erkek" girilmiş ve son günü tartılmış birey yok.</p>`}`,
-  any?async()=>{for(const p of pick)for(const x of p.sel)await Store.patch("birds/"+x.b.id,{rna:true});toast("RNA-seq bireyleri işaretlendi");render()}:null,"Bu bireyleri işaretle");
+  return {opts:o,groups:out,last:days().slice(-1)[0]};
+}
+function selMethodText(S){
+  const o=S.opts,g0=S.groups[0],fe=(g0?.feats||["lw","MGR","ti"]).map(k=>SEL_FEATS[k]);
+  const fl=fe.length>1?fe.slice(0,-1).join(", ")+" ve "+fe.slice(-1):fe[0];
+  let t=`RNA-seq örnekleri, kesimden önce belirlenen bir kurala göre seçilmiştir. Her genotipte ${o.male?"erkek ":""}bireyler için ${fl} hesaplanmış; her özellik genotip içinde medyan ve ölçeklenmiş mutlak sapma medyanı (MAD × 1,4826) ile standartlaştırılmıştır. `;
+  t+=o.mode==="uc"?`Büyüme indeksi, standartlaştırılmış ${SEL_FEATS.lw} ile ${SEL_FEATS[fe.includes(SEL_FEATS.MGR)?"MGR":"adg"]} değerlerinin ortalaması olarak tanımlanmış; her genotipten indeksi en yüksek ${Math.ceil(o.n/2)} ve en düşük ${o.n-Math.ceil(o.n/2)} birey seçilmiştir. `:`Bireyin genotip büyüme profiline uzaklığı, standartlaştırılmış değerlerin kareler ortalamasının karekökü olarak hesaplanmış ve her genotipten bu uzaklığı en küçük ${o.n} birey seçilmiştir. `;
+  if(o.spread)t+=`Deney birimi kümes olduğundan seçimde aynı kümesten alınabilecek birey sayısı sınırlandırılmış, örnekler kümeslere dağıtılmıştır. `;
+  if(o.myo)t+=`Beyaz çizgilenme (WS) veya odunsu göğüs (WB) skoru ${o.myoCut} ve üzerinde olan bireyler, göğüs miyopatisinin transkriptom üzerindeki baskın etkisi nedeniyle dışlanmıştır. `;
+  t+=`Her genotip için ${o.res} yedek birey aynı sıralamadan belirlenmiştir. Seçimde rastgelelik kullanılmamış, eşitlik durumunda birey kimliği sırası esas alınmıştır.`;
+  return t;
+}
+function selChart(S){
+  const mw=($("#main")?.clientWidth||680)-34,w=Math.max(300,Math.min(760,mw)),h=w<500?250:310,pad={l:52,r:14,t:26,b:36};
+  const yk=S.groups[0]?.feats.includes("MGR")?"MGR":"adg",yl=yk==="MGR"?"Maks. büyüme hızı (g/gün)":"Ort. günlük artış (g/gün)";
+  const P=[];S.groups.forEach(gr=>gr.use.forEach(x=>P.push([x.f.lw,x.f[yk]])));if(!P.length)return "";
+  let x0=Math.min(...P.map(p=>p[0])),x1=Math.max(...P.map(p=>p[0])),y0=Math.min(...P.map(p=>p[1])),y1=Math.max(...P.map(p=>p[1]));
+  const xs=niceStep((x1-x0||1)/4),ys=niceStep((y1-y0||1)/4);x0=Math.floor(x0/xs)*xs;x1=Math.ceil(x1/xs)*xs;y0=Math.floor(y0/ys)*ys;y1=Math.ceil(y1/ys)*ys;
+  const X=v=>pad.l+(v-x0)/(x1-x0||1)*(w-pad.l-pad.r),Y=v=>h-pad.b-(v-y0)/(y1-y0||1)*(h-pad.t-pad.b);
+  let s=`<g class="grid">`;for(let v=y0;v<=y1+1e-9;v+=ys)s+=`<line x1="${pad.l}" x2="${w-pad.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${pad.l-6}" y="${Y(v)+4}" text-anchor="end">${fmt(v)}</text>`;
+  for(let v=x0;v<=x1+1e-9;v+=xs)s+=`<text x="${X(v)}" y="${h-16}" text-anchor="middle">${fmt(v)}</text>`;
+  s+=`<text x="${w-pad.r}" y="${h-2}" text-anchor="end" style="font-size:11px">Son tartım (${S.last}. gün, g)</text><text x="6" y="12" style="font-size:11px">${esc(yl)}</text></g>`;
+  const fg=cssv("--fg");
+  S.groups.forEach(gr=>{const c=cssv(gr.g==="AT"?"--at":gr.g==="RS"?"--rs":"--accent");
+    gr.use.forEach(x=>{if(!gr.sel.includes(x)&&!gr.res.includes(x))s+=`<circle cx="${X(x.f.lw).toFixed(1)}" cy="${Y(x.f[yk]).toFixed(1)}" r="2.6" fill="${c}" fill-opacity=".28"/>`});
+    gr.res.forEach(x=>s+=`<circle cx="${X(x.f.lw).toFixed(1)}" cy="${Y(x.f[yk]).toFixed(1)}" r="4.5" fill="none" stroke="${c}" stroke-width="1.6" stroke-dasharray="2 2"/>`);
+    gr.sel.forEach(x=>s+=`<circle cx="${X(x.f.lw).toFixed(1)}" cy="${Y(x.f[yk]).toFixed(1)}" r="5" fill="${c}" stroke="${fg}" stroke-width="1.4"/>${gr.mode==="uc"?`<text x="${(X(x.f.lw)+7).toFixed(1)}" y="${(Y(x.f[yk])-6).toFixed(1)}" style="fill:${fg};font-size:10.5px;font-family:var(--mono)">${esc(x.b.id)}</text>`:""}`);
+  });
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Aday bireylerin büyüme dağılımı ve seçilenler">${s}</svg>
+  <div class="legend"><span><i style="border-color:var(--fg);border-top-width:6px"></i>Seçilen</span><span><i style="border-color:var(--muted);border-top-style:dashed"></i>Yedek</span>${S.groups.map(gr=>`<span><i style="border-color:${cssv(gr.g==="AT"?"--at":gr.g==="RS"?"--rs":"--accent")}"></i>${esc(gname(gr.g))} adayları</span>`).join("")}</div>`;
+}
+function selTable(gr){
+  const yk=gr.feats.includes("MGR");const row=(x,st)=>`<tr class="click" data-open="${esc(x.b.id)}"><td>${st==="sel"?`<span class="pill ok">seçildi</span>`:`<span class="pill">yedek</span>`}${x.role&&x.role!=="temsilî"?` <span class="small muted">${esc(x.role)}</span>`:""}</td><td><span class="tag ${esc(gr.g)}">${esc(x.b.id)}</span></td><td>${esc(x.b.pen)}</td><td class="n">${fmt(x.f.lw)}</td><td class="n">${yk?fmt(x.f.MGR,1):fmt(x.f.adg,1)}</td>${yk?`<td class="n">${fmt(x.f.ti,1)}</td>`:""}<td class="n">${fmt(gr.mode==="uc"?x.idx:x.d,2)}</td><td class="n">${x.wb!=null||x.ws!=null?`${x.wb??"—"} / ${x.ws??"—"}`:`<span class="small muted">kesimde</span>`}</td><td>${x.b.rna?`<span class="pill warn">işaretli</span>`:""}</td></tr>`;
+  const e=gr.ex,exs=[[e.gone,"ölü/çıkarıldı"],[e.sex,"dişi"],[e.nosex,"cinsiyet girilmemiş"],[e.myo,"miyopati"],[e.nodata,"eksik tartım"]].filter(x=>x[0].length).map(x=>`${x[0].length} ${x[1]}`).join(", ");
+  return `<div class="stack" style="gap:6px"><h4 style="margin:0">${esc(gname(gr.g))} <span class="small muted">· ${gr.use.length} uygun aday / ${gr.all} birey · medyan ${fmt(gr.med.lw)} g${exs?` · dışlanan: ${esc(exs)}`:""}</span></h4>
+  ${gr.sel.length?`<div class="tablewrap"><table class="t"><thead><tr><th>Durum</th><th>Kimlik</th><th>Kümes</th><th class="n">Son tartım (g)</th><th class="n">${yk?"MGR (g/gün)":"Günlük artış (g)"}</th>${yk?`<th class="n">ti (gün)</th>`:""}<th class="n">${gr.mode==="uc"?"Büyüme indeksi":"Uzaklık"}</th><th class="n">WB / WS</th><th></th></tr></thead><tbody>${gr.sel.map(x=>row(x,"sel")).join("")}${gr.res.map(x=>row(x,"res")).join("")}</tbody></table></div>`:`<div class="empty">Bu genotipte seçilebilecek birey yok.${e.nosex.length?" Önce bireylerin cinsiyetini gir.":""}</div>`}</div>`;
+}
+function selSaved(){const s=ST.rna?.sel;return s&&s.ids?s:null}
+function selBody(){
+  const o=selOpts(),S=computeSel(o),sv=selSaved(),cur=S.groups.flatMap(g=>g.sel.map(x=>x.b.id)).sort();
+  const same=sv&&JSON.stringify([...(sv.ids||[])].sort())===JSON.stringify(cur);
+  return `<div class="fgrid">
+      <label class="f"><span>Genotip başına birey</span><input class="i" id="so_n" type="number" min="1" max="20" value="${o.n}"></label>
+      <label class="f"><span>Yedek</span><input class="i" id="so_res" type="number" min="0" max="10" value="${o.res}"></label>
+      <label class="f" style="grid-column:span 2"><span>Seçim yöntemi</span><select class="i" id="so_mode"><option value="temsili" ${o.mode!=="uc"?"selected":""}>Temsilî (genotip medyanına en yakın)</option><option value="uc" ${o.mode==="uc"?"selected":""}>Uç fenotip (en hızlı ve en yavaş)</option></select></label>
+    </div>
+    <div class="row small" style="gap:16px;flex-wrap:wrap">
+      <label class="row"><input type="checkbox" id="so_male" ${o.male?"checked":""}> Yalnız erkekler</label>
+      <label class="row"><input type="checkbox" id="so_spread" ${o.spread?"checked":""}> Kümeslere dağıt</label>
+      <label class="row"><input type="checkbox" id="so_myo" ${o.myo?"checked":""}> WB veya WS ≥ <input class="i" id="so_cut" type="number" min="0.5" max="3" step="0.5" value="${o.myoCut}" style="width:64px;padding:4px 6px"> olanları dışla</label>
+    </div>
+    ${selChart(S)}
+    ${S.groups.map(selTable).join("")}
+    <details class="sec"><summary>Yöntem metni (tez için)</summary><div class="body stack"><p id="selTxt" style="margin:0;line-height:1.55">${esc(selMethodText(S))}</p><div class="row"><button class="btn" id="selCopy" type="button">Metni kopyala</button></div></div></details>
+    ${sv?`<p class="small" style="margin:0">${same?`<span class="pill ok">Kayıtlı seçimle aynı</span>`:`<span class="pill warn">Kayıtlı seçimden farklı</span>`} Kayıtlı seçim: ${esc(trDate(sv.at?.slice(0,10)))} · ${sv.ids.map(i=>`<span class="mono">${esc(i)}</span>`).join(", ")}</p>`:""}
+    <div class="row"><button class="btn primary" id="selSave" type="button" ${cur.length?"":"disabled"}>Seçimi kaydet ve işaretle</button><span class="small muted">Seçilenler RNA-seq bireyi olarak işaretlenir; kural ve tarih kaydedilir.</span></div>`;
+}
+function bindSel(){
+  const box=$("#selBody");if(!box)return;
+  const upd=()=>{ST.selOpts={n:Math.max(1,Math.min(20,parseInt(val("so_n"))||4)),res:Math.max(0,Math.min(10,parseInt(val("so_res"))||0)),mode:val("so_mode"),male:$("#so_male").checked,spread:$("#so_spread").checked,myo:$("#so_myo").checked,myoCut:num(val("so_cut"))??2};box.innerHTML=selBody();bindSel()};
+  ["so_n","so_res","so_mode","so_male","so_spread","so_myo","so_cut"].forEach(i=>{const e=$("#"+i);if(e)e.onchange=upd});
+  box.querySelectorAll("[data-open]").forEach(x=>x.onclick=()=>openBird(x.dataset.open,"rna"));
+  $("#selCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("#selTxt").textContent);toast("Yöntem metni kopyalandı")}catch(e){toast("Kopyalanamadı; metni seçip kopyala")}};
+  $("#selSave").onclick=()=>{
+    const S=computeSel(),ids=S.groups.flatMap(g=>g.sel.map(x=>x.b.id)),res=S.groups.flatMap(g=>g.res.map(x=>x.b.id)),old=birdList().filter(b=>b.rna&&!ids.includes(b.id));
+    dlg(`<h3>Seçim kaydedilsin mi?</h3><p>${S.groups.map(g=>`<b>${esc(gname(g.g))}:</b> ${g.sel.map(x=>esc(x.b.id)).join(", ")||"—"}`).join("<br>")}</p>${old.length?`<p class="small">Önceden işaretli olup bu seçimde olmayan ${old.length} bireyin işareti kaldırılacak: ${old.map(b=>esc(b.id)).join(", ")}</p>`:""}<p class="small muted">Kural, tarih ve yedekler de kaydedilir.</p>`,async()=>{
+      for(const b of old)await Store.patch("birds/"+b.id,{rna:false});
+      for(const id of ids)if(!ST.birds[id]?.rna)await Store.patch("birds/"+id,{rna:true});
+      await Store.patch("rna/deg",{sel:{at:new Date().toISOString(),opts:S.opts,ids,res,feats:S.groups[0]?.feats||[],text:selMethodText(S),rows:S.groups.flatMap(g=>[...g.sel.map(x=>[x,"seçildi"]),...g.res.map(x=>[x,"yedek"])].map(([x,st])=>({id:x.b.id,g:g.g,pen:x.b.pen,st,role:x.role,lw:x.f.lw,MGR:x.f.MGR,ti:x.f.ti,adg:x.f.adg,d:x.d,idx:x.idx})))}});
+      toast("Seçim kaydedildi");render();
+    },"Kaydet");
+  };
 }
 
 /* ============ AYARLAR ============ */
@@ -1302,6 +1415,7 @@ async function exportXLSX(){
   add("Kesim",birdList().filter(b=>b.slaughter).map(b=>{const c=sCalc(b.slaughter);const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Kesim tarihi":trDate(b.slaughter.date)};FL("slaughter").forEach(m=>r[flabel(m)]=ftype(m)==="text"?(b.slaughter[m.k]||""):num(b.slaughter[m.k]));Object.assign(r,{"Karkas randımanı (%)":c.yield,"Göğüs eti / karkas (%)":c.breast,"But / karkas (%)":c.thigh,"Abdominal yağ / canlı ağırlık (%)":c.fat});return r}));
   add("Et kalitesi",birdList().filter(b=>b.meat).map(b=>{const c=mCalc(b.meat);const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||""};FL("meat").forEach(f=>r[(f.g?f.g+": ":"")+flabel(f)]=ftype(f)==="text"?(b.meat[f.k]||""):num(b.meat[f.k]));r["Drip loss (%)"]=c.drip;r["Cooking loss (%)"]=c.cook;return r}));
   add("RNA-seq",birdList().filter(b=>b.rna||b.rnaseq).map(b=>{const r={"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","Seçildi":b.rna?"evet":""};FL("rna").forEach(f=>r[flabel(f)]=ftype(f)==="text"?(b.rnaseq?.[f.k]||""):num(b.rnaseq?.[f.k]));return r}));
+  {const sv=selSaved();add("RNA-seq seçimi",sv?[...sv.rows.map(r=>({"Kimlik":r.id,"Genotip":gname(r.g),"Kümes":r.pen,"Durum":r.st,"Rol":r.role||"","Son tartım (g)":r.lw,"MGR (g/gün)":r.MGR,"ti (gün)":r.ti,"Günlük artış (g)":r.adg,"Profil uzaklığı":r.d,"Büyüme indeksi":r.idx})),{},{"Kimlik":"Kayıt tarihi","Genotip":trDate(sv.at.slice(0,10))},{"Kimlik":"Yöntem","Genotip":sv.text}]:[])}
   add("Gompertz",birdList().map(b=>{const f=birdGomp(b);return f?{"Kimlik":b.id,"Genotip":gname(b.geno),"Kümes":b.pen,"Cinsiyet":b.sex||"","A (g)":f.A,"k (1/gün)":f.k,"ti (gün)":f.ti,"Wi (g)":f.Wi,"Maks. büyüme hızı (g/gün)":f.MGR,"R²":f.r2,"Tartım sayısı":f.n}:null}).filter(Boolean));
   const ap=areaPairs(null);add("Görüntü-ağırlık",ap.map(p=>({"Kimlik":p.b,"Genotip":gname(p.g),"Gün":p.d,"Alan (cm²)":p.a,"Canlı ağırlık (g)":p.y,"Tahmin (g)":predictW(p.g,p.a)})));
   const buf=X.write(wb,{type:"array",bookType:"xlsx"});
