@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1f6b4f">
+<meta name="theme-color" content="#2f5d50">
 <title>KümesTakip</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
@@ -13,41 +13,41 @@
 <meta name="apple-mobile-web-app-title" content="KümesTakip">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&family=Noto+Sans+Mono:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: saha aracı — üstte deneme şeridi, ortada tek görünüm, telefonda altta sekme çubuğu; masaüstünde sekmeler üstte */
 :root{
-  --bg:#f3f5f2; --surface:#ffffff; --sunk:#e9ede7; --line:#d3d9d0; --fg:#18211b; --muted:#56635a;
-  --accent:#1f6b4f; --accent-fg:#ffffff; --accent-soft:#dcebe3;
+  --bg:#f1f2ee; --surface:#ffffff; --sunk:#ebece6; --line:#d6d8d0; --fg:#1a1f1c; --muted:#5a615b;
+  --accent:#2f5d50; --accent-fg:#ffffff; --accent-soft:#e2eae6;
   --at:#b07a00; --at-soft:#f7ecd0; --rs:#2a62b8; --rs-soft:#dde7f7;
   --ok:#2e7d3e; --warn:#a35f00; --bad:#b3261e; --warn-soft:#fbeed9; --bad-soft:#f9e1df;
-  --body:"Noto Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  --mono:"Noto Sans Mono",ui-monospace,Menlo,Consolas,monospace;
-  --brand:"Noto Sans",system-ui,sans-serif;
-  --r:8px;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --brand:"Bricolage Grotesque","Public Sans",system-ui,sans-serif;
+  --r:6px;
   --sky:#e2ece6; --topbg:rgba(243,245,242,.9);
   --pattern:none;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#111613; --surface:#18201b; --sunk:#202a23; --line:#2f3b33; --fg:#e6ece7; --muted:#a2b0a6;
-  --accent:#5fbf95; --accent-fg:#0c1510; --accent-soft:#1e3328;
+  --accent:#7fb8a3; --accent-fg:#0f1714; --accent-soft:#1f2f29;
   --at:#e7b23a; --at-soft:#3a2f14; --rs:#7aa7f0; --rs-soft:#1c2a42;
   --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; --sky:#14231b; --topbg:rgba(17,22,19,.9);
   --pattern:none; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111613; --surface:#18201b; --sunk:#202a23; --line:#2f3b33; --fg:#e6ece7; --muted:#a2b0a6;
-  --accent:#5fbf95; --accent-fg:#0c1510; --accent-soft:#1e3328;
+  --accent:#7fb8a3; --accent-fg:#0f1714; --accent-soft:#1f2f29;
   --at:#e7b23a; --at-soft:#3a2f14; --rs:#7aa7f0; --rs-soft:#1c2a42;
   --ok:#6cc27a; --warn:#e5a54a; --bad:#f08a80; --warn-soft:#3a2c14; --bad-soft:#3d1e1b; --sky:#14231b; --topbg:rgba(17,22,19,.9);
   --pattern:none; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg);color:var(--fg)}
-html{min-height:100%;background-color:var(--bg);background-image:radial-gradient(1100px 420px at 50% -140px,var(--sky),transparent 70%);background-repeat:no-repeat;background-attachment:fixed}
+html{min-height:100%;background-color:var(--bg)}
 body{background:transparent;min-height:100vh}
 body{font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:88px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
-h1,h2,h3{font-family:var(--body);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:0;line-height:1.25}
-h2{font-size:1.4rem} h3{font-size:1.1rem}
+h1,h2,h3{font-family:var(--brand);font-weight:700;letter-spacing:-.015em;text-wrap:balance;margin:0;line-height:1.2}
+h2{font-size:1.55rem} h3{font-size:1.15rem;font-weight:650}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -57,8 +57,8 @@ button{cursor:pointer}
 .small{font-size:.88rem}
 .wrap{max-width:1080px;margin:0 auto}
 
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--topbg);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;align-items:center;gap:12px;padding-block:10px;border-bottom:1px solid var(--line)}
-.brand{font-family:var(--brand);font-weight:800;font-size:1.15rem;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;gap:12px;padding-block:10px;border-bottom:1px solid var(--line)}
+.brand{font-family:var(--brand);font-weight:700;font-size:1.2rem;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}
 .brand .mark{width:28px;height:28px;border-radius:8px;flex:0 0 auto;background:#1f6b4f url("icons/icon-192.png") center/cover;box-shadow:0 2px 6px rgba(0,0,0,.15)}
 .brand b{color:var(--accent);font-weight:700}
 .trial{flex:1;min-width:0;color:var(--muted);font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -68,7 +68,7 @@ button{cursor:pointer}
 .banner{margin-top:10px;padding:10px 12px;border-radius:var(--r);background:var(--warn-soft);color:var(--fg);font-size:.92rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(7,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
-.tabs button{background:none;border:0;padding:8px 2px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.72rem;color:var(--muted)}
+.tabs button{background:none;border:0;padding:8px 1px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.66rem;letter-spacing:-.01em;color:var(--muted);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tabs button[aria-current="page"]{color:var(--accent);font-weight:700}
 .tabs.ro{grid-template-columns:repeat(2,1fr)}
@@ -115,21 +115,21 @@ details.sec .body{padding:0 16px 16px;display:flex;flex-direction:column;gap:12p
 .tag.xl .pk{display:none}
 .penbig{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:1rem}
 .tag.xl{align-self:flex-start;font-size:1.9rem;font-weight:700;padding:2px 14px;border-width:3px;border-radius:8px}
-.pill{display:inline-block;font-size:.78rem;padding:2px 9px;border-radius:999px;background:var(--sunk);color:var(--muted)}
+.pill{display:inline-block;font-size:.78rem;padding:2px 8px;border-radius:4px;background:var(--sunk);color:var(--muted)}
 .pill.ok{background:var(--accent-soft);color:var(--accent)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
 
 .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 table.t{border-collapse:collapse;width:100%;font-size:.9rem}
 table.t th,table.t td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
-table.t th{font-weight:600;color:var(--muted);font-size:.82rem;background:var(--sunk);position:sticky;top:0}
+table.t th{font-weight:600;color:var(--fg);font-size:.82rem;background:var(--surface);border-bottom:2px solid var(--fg);position:sticky;top:0}
 table.t td.n,table.t th.n{text-align:right}
 table.t tr.click{cursor:pointer} table.t tr.click:hover td{background:var(--accent-soft)}
 table.t input.i,table.t select.i{padding:5px 7px;font-size:.92rem;min-width:70px;min-height:34px}
 table.fe input.i{min-width:110px}
 
 .kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
-.kpi{padding:10px 12px;border-radius:var(--r);background:var(--sunk)}
-.kpi .v{font-size:1.45rem;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi{padding:10px 12px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent)}
+.kpi .v{font-family:var(--brand);font-size:1.5rem;font-weight:700;font-variant-numeric:tabular-nums}
 .kpi .l{font-size:.8rem;color:var(--muted)}
 
 .strip{display:flex;gap:10px;overflow-x:auto;padding-bottom:6px}
@@ -171,7 +171,8 @@ svg.chart .grid line{stroke:var(--line)}
 body{margin:0}
 img{max-width:100%}
 [hidden]{display:none!important}
-.top .btn{padding:5px 10px;font-size:.85rem}
+.top .btn{padding:5px 8px;font-size:.85rem;white-space:nowrap}
+.top .chip{max-width:40vw;overflow:hidden;text-overflow:ellipsis}
 /* canlı QR tarayıcı */
 .scanner{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column}
 .scanner video{flex:1;width:100%;min-height:0;object-fit:cover}
@@ -179,8 +180,8 @@ img{max-width:100%}
 .scan-bar{position:absolute;left:0;right:0;bottom:0;padding:16px max(16px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;align-items:center;color:#fff;font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.7))}
 /* giriş ekranı */
 .gate{min-height:70vh;display:grid;place-items:center;padding-block:24px}
-.gate-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px}
-.gate-card .logo{font-family:var(--brand);font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.gate-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:24px}
+.gate-card .logo{font-family:var(--brand);font-size:2.2rem;font-weight:700;letter-spacing:-.03em;line-height:1.05}
 .gate-card{overflow:hidden}
 .gate-card .hero{margin:-24px -24px 4px;width:calc(100% + 48px);max-width:none;display:block}
 .hero-band{display:block;width:100%;max-width:100%;border-radius:12px;border:1px solid var(--line)}
@@ -1243,7 +1244,7 @@ async function penPosterPDF(){
   const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"mm",format:"a4"});const W=1240,H=1754,BAND=470;
   const hero=await svgImage(heroSVG("hero",Math.round(420*BAND/W)),W,BAND).catch(()=>null);
   const icon=await new Promise(r=>{const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src="icons/icon-192.png"});
-  const F="'Noto Sans', system-ui, sans-serif";
+  const F="'Public Sans', system-ui, sans-serif",D="'Bricolage Grotesque', 'Public Sans', sans-serif";
   let first=true;
   for(const p of penIds()){
     const g=penGeno(p),gc={AT:"#a36f00",RS:"#2a62b8"}[g]||"#1f6b4f";
@@ -1251,8 +1252,8 @@ async function penPosterPDF(){
     x.fillStyle="#ffffff";x.fillRect(0,0,W,H);
     if(hero)x.drawImage(hero,0,0,W,BAND);else{x.fillStyle="#1f6b4f";x.fillRect(0,0,W,BAND)}
     if(icon)x.drawImage(icon,84,70,72,72);
-    x.textAlign="left";x.fillStyle="#ffffff";x.font=`800 50px ${F}`;x.fillText("KümesTakip",176,124);
-    x.textAlign="center";x.fillStyle="#18211b";x.font=`800 210px ${F}`;x.fillText("Kümes "+p,W/2,BAND+235);
+    x.textAlign="left";x.fillStyle="#ffffff";x.font=`700 54px ${D}`;x.fillText("KümesTakip",176,124);
+    x.textAlign="center";x.fillStyle="#18211b";x.font=`700 220px ${D}`;x.fillText("Kümes "+p,W/2,BAND+235);
     let yy=BAND+280;
     if(g){x.font=`700 54px ${F}`;const t=gname(g),tw=x.measureText(t).width+90;x.fillStyle=gc;x.beginPath();x.roundRect(W/2-tw/2,yy,tw,92,46);x.fill();x.fillStyle="#fff";x.fillText(t,W/2,yy+64);yy+=92}
     const q=qrObj(qrText("K"+p)),n=q.getModuleCount(),qs=520,m=qs/(n+8),qx=(W-qs)/2,qy=yy+56;
@@ -1490,17 +1491,15 @@ function heroSVG(cls="hero",h=210){
   const X=t=>x0+(x1-x0)*t/42,Y=t=>y0-(y0-y1)*(f(t)-f0)/(f42-f0);
   let d="";for(let t=0;t<=42;t++)d+=(t?"L":"M")+X(t).toFixed(1)+","+Y(t).toFixed(1);
   const grid=ds.map(t=>`<path d="M${X(t).toFixed(1)} ${y1-12}V${y0}"/>`).join("")+[0,1,2,3].map(i=>`<path d="M${x0} ${(y0-(y0-y1)*i/3).toFixed(1)}H${x1}"/>`).join("");
-  const id="kBg"+(heroSVG.n=(heroSVG.n||0)+1);
   /* yarı saydam renk geçişi yok: tarayıcının PDF'e kaydetmesinde ve baskıda renkler bozulmasın */
   return `<svg class="${cls}" viewBox="0 0 ${W} ${h}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Bireysel büyüme eğrisi">
-  <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d2e21"/><stop offset="1" stop-color="#1f6b4f"/></linearGradient></defs>
-  <rect width="${W}" height="${h}" fill="#164d38"/><rect width="${W}" height="${h}" fill="url(#${id})"/>
+  <rect width="${W}" height="${h}" fill="#24483e"/>
   <g stroke="#fff" stroke-opacity=".08" stroke-width="1">${grid}</g>
   <path d="${d}L${X(42)},${y0}L${X(0)},${y0}Z" fill="#ffffff" fill-opacity=".07"/>
   <path class="curve" d="${d}" pathLength="1" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  ${ds.slice(0,-1).map(t=>`<circle cx="${X(t).toFixed(1)}" cy="${Y(t).toFixed(1)}" r="3.4" fill="#123d2c" stroke="#fff" stroke-width="1.6"/>`).join("")}
+  ${ds.slice(0,-1).map(t=>`<circle cx="${X(t).toFixed(1)}" cy="${Y(t).toFixed(1)}" r="3.4" fill="#24483e" stroke="#fff" stroke-width="1.6"/>`).join("")}
   <circle cx="${X(42).toFixed(1)}" cy="${Y(42).toFixed(1)}" r="10" fill="#e9c46a" fill-opacity=".22"/><circle cx="${X(42).toFixed(1)}" cy="${Y(42).toFixed(1)}" r="5" fill="#e9c46a"/>
-  <g fill="#fff" fill-opacity=".55" font-family="Noto Sans, system-ui, sans-serif" font-size="9.5">${ds.map(t=>`<text x="${X(t).toFixed(1)}" y="${y0+16}" text-anchor="middle">${t}</text>`).join("")}<text x="${x1}" y="${y0+29}" text-anchor="end" fill-opacity=".4">gün</text></g>
+  <g fill="#fff" fill-opacity=".55" font-family="JetBrains Mono, monospace" font-size="9.5">${ds.map(t=>`<text x="${X(t).toFixed(1)}" y="${y0+16}" text-anchor="middle">${t}</text>`).join("")}<text x="${x1}" y="${y0+29}" text-anchor="end" fill-opacity=".4">gün</text></g>
   </svg>`;
 }
 
